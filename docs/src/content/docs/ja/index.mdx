@@ -1,0 +1,45 @@
+---
+title: Confluence MD
+description: MarkdownファイルをConfluence Cloudに変換し、ページを自動更新するGitHub Action
+template: splash
+hero:
+  tagline: GitHub Actionひとつで、MarkdownドキュメントをConfluence Cloudに変換
+  actions:
+    - text: はじめる
+      link: /ja/getting-started/installation/
+      icon: right-arrow
+    - text: GitHubで見る
+      link: https://github.com/daiki/confluence-md
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## 機能
+
+<CardGrid stagger>
+  <Card title="GitHub Flavored Markdown" icon="document">
+    テーブル、タスクリスト、取り消し線、コードブロックなどGFMを完全サポート。
+  </Card>
+  <Card title="Mermaidダイアグラム" icon="puzzle">
+    MermaidコードブロックをConfluence Mermaidマクロに自動変換。
+  </Card>
+  <Card title="画像処理" icon="add-document">
+    ローカル画像を添付ファイルとしてアップロード、または外部URLを使用。
+  </Card>
+  <Card title="スマート更新" icon="approve-check">
+    コンテンツハッシュにより、変更がない場合は更新をスキップ。
+  </Card>
+</CardGrid>
+
+## クイック例
+
+```yaml
+- uses: daiki/confluence-md@v1
+  with:
+    confluence_base_url: https://your-domain.atlassian.net
+    email: ${{ secrets.CONFLUENCE_EMAIL }}
+    api_token: ${{ secrets.CONFLUENCE_API_TOKEN }}
+    source: docs/README.md
+```

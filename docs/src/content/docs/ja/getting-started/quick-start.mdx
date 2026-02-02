@@ -1,0 +1,89 @@
+---
+title: クイックスタート
+description: 5分でConfluence MDを使い始める
+---
+
+このガイドでは、最初のMarkdownファイルをConfluenceに同期する方法を説明します。
+
+## ステップ1: Markdownファイルを準備
+
+ConfluenceページIDを含むフロントマター付きのMarkdownファイルを作成：
+
+```markdown
+---
+confluence_page_id: 123456789
+---
+
+# ドキュメント
+
+このコンテンツがConfluenceに同期されます。
+
+## 機能
+
+- **太字**と*斜体*テキスト
+- シンタックスハイライト付きコードブロック
+- テーブルとリスト
+```
+
+## ステップ2: ワークフローを作成
+
+`.github/workflows/confluence.yml`を作成：
+
+```yaml
+name: Confluenceに同期
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**/*.md'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: daiki/confluence-md@v1
+        with:
+          confluence_base_url: ${{ vars.CONFLUENCE_BASE_URL }}
+          email: ${{ secrets.CONFLUENCE_EMAIL }}
+          api_token: ${{ secrets.CONFLUENCE_API_TOKEN }}
+          source: docs/README.md
+```
+
+## ステップ3: シークレットを設定
+
+リポジトリに必要なシークレットを追加（詳細は[インストール](/ja/getting-started/installation/)を参照）。
+
+## ステップ4: プッシュして確認
+
+1. 変更をコミットしてプッシュ
+2. **Actions**タブでワークフローの実行を確認
+3. Confluenceページで更新されたコンテンツを確認
+
+## Action出力の使用
+
+Actionは後続のステップで使用できる出力を提供します：
+
+```yaml
+- uses: daiki/confluence-md@v1
+  id: confluence
+  with:
+    confluence_base_url: ${{ vars.CONFLUENCE_BASE_URL }}
+    email: ${{ secrets.CONFLUENCE_EMAIL }}
+    api_token: ${{ secrets.CONFLUENCE_API_TOKEN }}
+    source: docs/README.md
+
+- name: 結果を表示
+  run: |
+    echo "ページURL: ${{ steps.confluence.outputs.page_url }}"
+    echo "更新済み: ${{ steps.confluence.outputs.updated }}"
+    echo "バージョン: ${{ steps.confluence.outputs.version }}"
+```
+
+## 次のステップ
+
+- [フロントマターオプション](/ja/guides/frontmatter/)を学ぶ
+- [画像の扱い](/ja/guides/images/)を理解する
+- すべての[入力パラメータ](/ja/reference/inputs/)を確認する

@@ -1,0 +1,118 @@
+---
+title: 入力パラメータ
+description: GitHub Actionの全入力パラメータの完全リファレンス
+---
+
+## 必須入力
+
+| 入力 | 説明 |
+|------|------|
+| `confluence_base_url` | ConfluenceインスタンスURL（例：`https://example.atlassian.net`） |
+| `email` | 認証用Confluenceアカウントメールアドレス |
+| `api_token` | 認証用Confluence APIトークン |
+| `source` | 変換するMarkdownファイルのパス |
+
+## オプション入力
+
+### ページ設定
+
+| 入力 | デフォルト | 説明 |
+|------|-----------|------|
+| `page_id` | - | ConfluenceページID（フロントマターがない場合のフォールバック） |
+| `frontmatter_page_id_key` | `confluence_page_id` | ページIDのYAMLフロントマターキー |
+| `title_override` | - | Confluenceページタイトルを上書き |
+
+### 画像処理
+
+| 入力 | デフォルト | 説明 |
+|------|-----------|------|
+| `attachments_base` | ソースディレクトリ | 相対画像パスを解決するベースディレクトリ |
+| `image_mode` | `upload` | `upload`（添付ファイルとして）または`external`（URL使用） |
+| `download_remote_images` | `false` | リモート画像をダウンロードして添付ファイルとしてアップロード |
+
+### 動作
+
+| 入力 | デフォルト | 説明 |
+|------|-----------|------|
+| `skip_if_unchanged` | `true` | コンテンツハッシュが一致する場合は更新をスキップ |
+| `dry_run` | `false` | 出力を生成するがConfluenceを更新しない |
+| `notify_watchers` | `false` | 受け付けるが現在は無視される |
+
+### 詳細設定
+
+| 入力 | デフォルト | 説明 |
+|------|-----------|------|
+| `user_agent` | `confluence-md` | HTTP User-Agentヘッダー |
+
+## 入力の詳細
+
+### confluence_base_url
+
+Confluence CloudインスタンスのベースURL。プロトコル（`https://`）を含める必要があります。
+
+```yaml
+confluence_base_url: https://your-company.atlassian.net
+```
+
+末尾のスラッシュは自動的に正規化されます。
+
+### page_id
+
+コンテンツを公開するConfluenceページID。フロントマターにページIDが含まれていない場合のフォールバックとして機能します。
+
+```yaml
+page_id: '123456789'
+```
+
+### image_mode
+
+画像の処理方法を制御：
+
+- `upload`: ローカル画像をページ添付ファイルとしてアップロード
+- `external`: 画像をURLで参照（ローカル画像は外部からアクセス可能である必要あり）
+
+### skip_if_unchanged
+
+`true`の場合、ActionはConfluenceストレージ形式のSHA256ハッシュを計算し、ページに保存されたハッシュと比較します。一致する場合、更新は実行されません。
+
+不要なバージョンの増加と通知を防ぎます。
+
+### dry_run
+
+`true`の場合、Action:
+- MarkdownをConfluenceストレージ形式に変換
+- 生成されたコンテンツを出力
+- ページを更新するAPIコールを行わない
+- 添付ファイルをアップロードしない
+
+設定のテストに便利です。
+
+## 例：すべての入力
+
+```yaml
+- uses: daiki/confluence-md@v1
+  with:
+    # 必須
+    confluence_base_url: ${{ vars.CONFLUENCE_BASE_URL }}
+    email: ${{ secrets.CONFLUENCE_EMAIL }}
+    api_token: ${{ secrets.CONFLUENCE_API_TOKEN }}
+    source: docs/README.md
+
+    # ページ設定
+    page_id: '123456789'
+    frontmatter_page_id_key: confluence_page_id
+    title_override: 'ドキュメント'
+
+    # 画像処理
+    attachments_base: 'assets/'
+    image_mode: upload
+    download_remote_images: 'true'
+
+    # 動作
+    skip_if_unchanged: 'true'
+    dry_run: 'false'
+    notify_watchers: 'false'
+
+    # 詳細設定
+    user_agent: my-custom-agent
+```

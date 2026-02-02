@@ -1,0 +1,164 @@
+---
+title: 開発への参加
+description: Confluence MDプロジェクトへの貢献方法
+---
+
+## 開発環境のセットアップ
+
+### 前提条件
+
+- Node.js 20以上
+- npm
+
+### 開始
+
+```bash
+# リポジトリをクローン
+git clone https://github.com/daiki/confluence-md.git
+cd confluence-md
+
+# 依存関係をインストール
+npm install
+```
+
+## 利用可能なコマンド
+
+| コマンド | 説明 |
+|---------|------|
+| `npm run build` | nccで`dist/index.js`にバンドル |
+| `npm test` | 完全なテストスイートを実行 |
+| `npm run test:watch` | ウォッチモードでテストを実行 |
+| `npm run typecheck` | TypeScript型チェック |
+| `npm run check` | Biomeリンティング |
+| `npm run format` | Biomeでコードをフォーマット |
+| `npm run ci` | すべてのチェックを実行（lint、typecheck、test、build） |
+
+## テストの実行
+
+```bash
+# すべてのテストを実行
+npm test
+
+# 特定のテストファイルを実行
+npx vitest run tests/converter.test.ts
+
+# パターンに一致するテストを実行
+npx vitest run -t "should convert h1"
+
+# 開発用ウォッチモード
+npm run test:watch
+```
+
+## プロジェクト構造
+
+```
+src/
+├── main.ts           # エントリーポイント
+├── types.ts          # TypeScriptインターフェース
+├── inputs.ts         # 入力処理
+├── frontmatter.ts    # フロントマター抽出
+├── images.ts         # 画像ユーティリティ
+├── converter/        # Markdown → Confluence変換
+│   ├── index.ts
+│   ├── nodes.ts
+│   └── xml.ts
+└── confluence/       # Confluence APIクライアント
+    ├── client.ts
+    ├── pages.ts
+    └── attachments.ts
+```
+
+## 変更を加える
+
+### 1. ブランチを作成
+
+```bash
+git checkout -b feature/your-feature-name
+```
+
+### 2. 変更を加える
+
+- 既存のコードスタイルに従う
+- 新機能にはテストを追加
+- 必要に応じてドキュメントを更新
+
+### 3. チェックを実行
+
+```bash
+npm run ci
+```
+
+これにより以下が実行されます：
+- Biomeによるリンティング
+- 型チェック
+- テストスイート
+- ビルド検証
+
+### 4. コミットとプッシュ
+
+```bash
+git add .
+git commit -m "機能を追加"
+git push origin feature/your-feature-name
+```
+
+### 5. プルリクエストを開く
+
+`main`ブランチに対してPRを開き、以下を含める：
+- 変更の明確な説明
+- 関連するIssueへのリンク
+- 該当する場合はスクリーンショット
+
+## コードスタイル
+
+プロジェクトはリンティングとフォーマットに[Biome](https://biomejs.dev/)を使用：
+
+```bash
+# 問題をチェック
+npm run check
+
+# 自動修正とフォーマット
+npm run format
+```
+
+## テストガイドライン
+
+- 新機能にはテストを書く
+- エッジケースをテスト
+- 説明的なテスト名を使用
+- テストは集中的で独立させる
+
+テスト構造の例：
+
+```typescript
+import { describe, it, expect } from 'vitest';
+
+describe('機能名', () => {
+  it('基本ケースを処理する', () => {
+    // Arrange
+    const input = 'test';
+
+    // Act
+    const result = yourFunction(input);
+
+    // Assert
+    expect(result).toBe('expected');
+  });
+
+  it('エッジケースを処理する', () => {
+    // ...
+  });
+});
+```
+
+## ビルド
+
+プロジェクトは`@vercel/ncc`を使用して単一ファイルにバンドル：
+
+```bash
+npm run build
+```
+
+これにより`dist/index.js`が作成され、これがGitHub Actionsで実際に実行されるファイルです。
+
+**重要**: `dist/`ディレクトリはコミットする必要があります。CIは最新であることを検証します。

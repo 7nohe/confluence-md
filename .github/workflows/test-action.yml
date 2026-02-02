@@ -1,0 +1,20 @@
+name: Test Action
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-action:
+    name: Test confluence-md
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run confluence-md (dry-run)
+        uses: ./
+        with:
+          confluence_base_url: 'https://example.atlassian.net'
+          email: 'test@example.com'
+          api_token: 'dummy-token-for-testing'
+          source: 'test-fixtures/sample.md'
+          dry_run: 'true'

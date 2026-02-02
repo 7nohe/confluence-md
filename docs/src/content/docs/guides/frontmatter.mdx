@@ -1,0 +1,84 @@
+---
+title: Frontmatter
+description: Configure Confluence page settings using YAML frontmatter in your Markdown files.
+---
+
+Frontmatter is YAML metadata at the beginning of your Markdown file, enclosed by `---` delimiters.
+
+## Basic Frontmatter
+
+The most common use is to specify the Confluence page ID:
+
+```markdown
+---
+confluence_page_id: 123456789
+---
+
+# Your Content Here
+```
+
+## Custom Frontmatter Key
+
+By default, the action looks for `confluence_page_id`. You can customize this:
+
+```yaml
+- uses: daiki/confluence-md@v1
+  with:
+    # ... other inputs
+    frontmatter_page_id_key: 'page_id'
+```
+
+Then in your Markdown:
+
+```markdown
+---
+page_id: 123456789
+---
+```
+
+## Frontmatter vs Action Input
+
+You can specify the page ID in two ways:
+
+| Method | Priority | Use Case |
+|--------|----------|----------|
+| Frontmatter | Higher | When each Markdown file maps to a specific page |
+| Action Input (`page_id`) | Lower (fallback) | When syncing multiple files to the same page |
+
+Example with fallback:
+
+```yaml
+- uses: daiki/confluence-md@v1
+  with:
+    # ... other inputs
+    page_id: '123456789'  # Used only if frontmatter is missing
+    source: docs/README.md
+```
+
+## Multiple Metadata Fields
+
+You can include other metadata in frontmatter - the action only reads the page ID key:
+
+```markdown
+---
+title: My Documentation
+author: John Doe
+date: 2024-01-15
+confluence_page_id: 123456789
+tags:
+  - documentation
+  - api
+---
+
+# Content
+```
+
+## Finding Your Page ID
+
+The page ID is visible in the Confluence URL:
+
+```
+https://your-domain.atlassian.net/wiki/spaces/SPACE/pages/123456789/Page+Title
+```
+
+You can also find it via the Confluence API or by clicking the page menu (**...**) and selecting **Page Information**.

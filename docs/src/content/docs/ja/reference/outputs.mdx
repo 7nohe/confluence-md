@@ -1,0 +1,106 @@
+---
+title: 出力パラメータ
+description: GitHub Actionが提供するすべての出力のリファレンス
+---
+
+Actionは後続のワークフローステップで使用できる複数の出力を提供します。
+
+## 利用可能な出力
+
+| 出力 | 型 | 説明 |
+|------|------|------|
+| `page_url` | string | 更新されたConfluenceページの完全URL |
+| `page_id` | string | ConfluenceページID |
+| `version` | string | 更新後の新しいバージョン番号 |
+| `updated` | string | `"true"`または`"false"` - ページが更新されたかどうか |
+| `attachments_uploaded` | string | アップロードされた添付ファイルの数 |
+| `content_hash` | string | 生成されたコンテンツのSHA256ハッシュ（最初の16文字） |
+
+## 出力の使用
+
+ステップの`id`を使用して出力にアクセス：
+
+```yaml
+steps:
+  - uses: daiki/confluence-md@v1
+    id: confluence
+    with:
+      confluence_base_url: ${{ vars.CONFLUENCE_BASE_URL }}
+      email: ${{ secrets.CONFLUENCE_EMAIL }}
+      api_token: ${{ secrets.CONFLUENCE_API_TOKEN }}
+      source: docs/README.md
+
+  - name: 結果を表示
+    run: |
+      echo "ページURL: ${{ steps.confluence.outputs.page_url }}"
+      echo "ページID: ${{ steps.confluence.outputs.page_id }}"
+      echo "バージョン: ${{ steps.confluence.outputs.version }}"
+      echo "更新済み: ${{ steps.confluence.outputs.updated }}"
+      echo "添付ファイル: ${{ steps.confluence.outputs.attachments_uploaded }}"
+      echo "コンテンツハッシュ: ${{ steps.confluence.outputs.content_hash }}"
+```
+
+## 出力の詳細
+
+### page_url
+
+Confluenceページを表示するための完全なURL：
+
+```
+https://your-domain.atlassian.net/wiki/spaces/SPACE/pages/123456789/Page+Title
+```
+
+### updated
+
+ページコンテンツが実際に更新されたかどうかを示す文字列値：
+
+- `"true"` - ページが新しいコンテンツで更新された
+- `"false"` - ページは更新されなかった（コンテンツ未変更またはドライラン）
+
+条件付きステップに便利：
+
+```yaml
+- name: 更新時に通知
+  if: steps.confluence.outputs.updated == 'true'
+  run: echo "ページが更新されました！"
+```
+
+### content_hash
+
+生成されたConfluenceストレージ形式のSHA256ハッシュの最初の16文字。このハッシュは`skip_if_unchanged`が有効な場合の変更検出に使用されます。
+
+## 実践例
+
+### Slack通知を送信
+
+```yaml
+- uses: daiki/confluence-md@v1
+  id: confluence
+  with:
+    # ... 入力
+
+- name: Slackに通知
+  if: steps.confluence.outputs.updated == 'true'
+  uses: slackapi/slack-github-action@v1
+  with:
+    payload: |
+      {
+        "text": "ドキュメント更新: ${{ steps.confluence.outputs.page_url }}"
+      }
+```
+
+### サマリーを作成
+
+```yaml
+- uses: daiki/confluence-md@v1
+  id: confluence
+  with:
+    # ... 入力
+
+- name: サマリーを追加
+  run: |
+    echo "## Confluence同期結果" >> $GITHUB_STEP_SUMMARY
+    echo "- **ページ**: [${{ steps.confluence.outputs.page_id }}](${{ steps.confluence.outputs.page_url }})" >> $GITHUB_STEP_SUMMARY
+    echo "- **更新済み**: ${{ steps.confluence.outputs.updated }}" >> $GITHUB_STEP_SUMMARY
+    echo "- **バージョン**: ${{ steps.confluence.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+```

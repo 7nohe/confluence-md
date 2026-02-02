@@ -1,0 +1,164 @@
+---
+title: Contributing
+description: How to contribute to the Confluence MD project.
+---
+
+## Development Setup
+
+### Prerequisites
+
+- Node.js 20 or higher
+- npm
+
+### Getting Started
+
+```bash
+# Clone the repository
+git clone https://github.com/daiki/confluence-md.git
+cd confluence-md
+
+# Install dependencies
+npm install
+```
+
+## Available Commands
+
+| Command | Description |
+|---------|-------------|
+| `npm run build` | Bundle with ncc to `dist/index.js` |
+| `npm test` | Run full test suite |
+| `npm run test:watch` | Run tests in watch mode |
+| `npm run typecheck` | TypeScript type checking |
+| `npm run check` | Biome linting |
+| `npm run format` | Format code with Biome |
+| `npm run ci` | Run all checks (lint, typecheck, test, build) |
+
+## Running Tests
+
+```bash
+# Run all tests
+npm test
+
+# Run a specific test file
+npx vitest run tests/converter.test.ts
+
+# Run tests matching a pattern
+npx vitest run -t "should convert h1"
+
+# Watch mode for development
+npm run test:watch
+```
+
+## Project Structure
+
+```
+src/
+├── main.ts           # Entry point
+├── types.ts          # TypeScript interfaces
+├── inputs.ts         # Input handling
+├── frontmatter.ts    # Frontmatter extraction
+├── images.ts         # Image utilities
+├── converter/        # Markdown → Confluence conversion
+│   ├── index.ts
+│   ├── nodes.ts
+│   └── xml.ts
+└── confluence/       # Confluence API client
+    ├── client.ts
+    ├── pages.ts
+    └── attachments.ts
+```
+
+## Making Changes
+
+### 1. Create a Branch
+
+```bash
+git checkout -b feature/your-feature-name
+```
+
+### 2. Make Your Changes
+
+- Follow existing code style
+- Add tests for new functionality
+- Update documentation if needed
+
+### 3. Run Checks
+
+```bash
+npm run ci
+```
+
+This runs:
+- Linting with Biome
+- Type checking
+- Test suite
+- Build verification
+
+### 4. Commit and Push
+
+```bash
+git add .
+git commit -m "Add your feature"
+git push origin feature/your-feature-name
+```
+
+### 5. Open a Pull Request
+
+Open a PR against the `main` branch with:
+- Clear description of changes
+- Link to any related issues
+- Screenshots if applicable
+
+## Code Style
+
+The project uses [Biome](https://biomejs.dev/) for linting and formatting:
+
+```bash
+# Check for issues
+npm run check
+
+# Auto-fix and format
+npm run format
+```
+
+## Testing Guidelines
+
+- Write tests for new functionality
+- Test edge cases
+- Use descriptive test names
+- Keep tests focused and isolated
+
+Example test structure:
+
+```typescript
+import { describe, it, expect } from 'vitest';
+
+describe('featureName', () => {
+  it('should handle basic case', () => {
+    // Arrange
+    const input = 'test';
+
+    // Act
+    const result = yourFunction(input);
+
+    // Assert
+    expect(result).toBe('expected');
+  });
+
+  it('should handle edge case', () => {
+    // ...
+  });
+});
+```
+
+## Building
+
+The project bundles to a single file using `@vercel/ncc`:
+
+```bash
+npm run build
+```
+
+This creates `dist/index.js` which is the actual file executed by GitHub Actions.
+
+**Important**: The `dist/` directory must be committed. CI will verify it's up to date.

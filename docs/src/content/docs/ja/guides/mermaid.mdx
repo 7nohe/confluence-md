@@ -1,0 +1,119 @@
+---
+title: Mermaidダイアグラム
+description: MarkdownにMermaidダイアグラムを含め、Confluenceでレンダリングする
+---
+
+ActionはMermaidコードブロックをConfluenceのMermaidマクロに自動変換します。
+
+## 必要条件
+
+Confluenceインスタンスに**Mermaid Diagrams**アプリがインストールされている必要があります。これはAtlassian Marketplaceで入手できます。
+
+## 基本的な使い方
+
+言語として`mermaid`を指定したフェンスコードブロックを使用：
+
+````markdown
+```mermaid
+graph TD
+    A[開始] --> B{判断}
+    B -->|はい| C[アクション1]
+    B -->|いいえ| D[アクション2]
+    C --> E[終了]
+    D --> E
+```
+````
+
+これは以下に変換されます：
+
+```xml
+<ac:structured-macro ac:name="mermaid">
+  <ac:plain-text-body><![CDATA[graph TD
+    A[開始] --> B{判断}
+    B -->|はい| C[アクション1]
+    B -->|いいえ| D[アクション2]
+    C --> E[終了]
+    D --> E]]></ac:plain-text-body>
+</ac:structured-macro>
+```
+
+## サポートされる図の種類
+
+すべてのMermaid図タイプがサポートされています：
+
+### フローチャート
+
+````markdown
+```mermaid
+flowchart LR
+    A --> B --> C
+```
+````
+
+### シーケンス図
+
+````markdown
+```mermaid
+sequenceDiagram
+    アリス->>ボブ: こんにちは
+    ボブ-->>アリス: やあ！
+```
+````
+
+### クラス図
+
+````markdown
+```mermaid
+classDiagram
+    Animal <|-- Dog
+    Animal <|-- Cat
+```
+````
+
+### 状態図
+
+````markdown
+```mermaid
+stateDiagram-v2
+    [*] --> アクティブ
+    アクティブ --> 非アクティブ
+    非アクティブ --> [*]
+```
+````
+
+### ガントチャート
+
+````markdown
+```mermaid
+gantt
+    title プロジェクトタイムライン
+    section フェーズ1
+    タスク1: 2024-01-01, 30d
+    タスク2: 2024-01-15, 20d
+```
+````
+
+### ER図
+
+````markdown
+```mermaid
+erDiagram
+    CUSTOMER ||--o{ ORDER : places
+    ORDER ||--|{ LINE-ITEM : contains
+```
+````
+
+## トラブルシューティング
+
+### 図がレンダリングされない
+
+1. ConfluenceインスタンスにMermaidアプリがインストールされているか確認
+2. [Mermaid Live Editor](https://mermaid.live/)で図の構文を確認
+3. 閉じバッククォートの前に余分なスペースがないか確認
+
+### 複雑な図
+
+非常に複雑な図の場合は、以下を検討：
+- 小さな図に分割
+- ConfluenceのMermaidアプリネイティブエディタで微調整
+- まずMermaid Live Editorで図をテスト

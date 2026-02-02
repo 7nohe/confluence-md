@@ -1,0 +1,237 @@
+---
+title: 変換ルール
+description: Markdown要素がConfluenceストレージ形式にどのように変換されるか
+---
+
+このリファレンスでは、各Markdown要素がConfluenceのストレージ形式（XHTMLベース）にどのように変換されるかを説明します。
+
+## テキストフォーマット
+
+| Markdown | Confluence |
+|----------|------------|
+| `**太字**` | `<strong>太字</strong>` |
+| `*斜体*` | `<em>斜体</em>` |
+| `~~取り消し線~~` | `<del>取り消し線</del>` |
+| `` `コード` `` | `<code>コード</code>` |
+
+## 見出し
+
+```markdown
+# 見出し1
+## 見出し2
+### 見出し3
+```
+
+変換後：
+
+```xml
+<h1>見出し1</h1>
+<h2>見出し2</h2>
+<h3>見出し3</h3>
+```
+
+`<h6>`までの見出しがサポートされています。
+
+## 段落
+
+プレーンテキストの段落は`<p>`要素になります：
+
+```markdown
+これは段落です。
+
+これは別の段落です。
+```
+
+```xml
+<p>これは段落です。</p>
+<p>これは別の段落です。</p>
+```
+
+## リンク
+
+```markdown
+[リンクテキスト](https://example.com)
+```
+
+```xml
+<a href="https://example.com">リンクテキスト</a>
+```
+
+## リスト
+
+### 順序なしリスト
+
+```markdown
+- 項目1
+- 項目2
+  - ネストした項目
+```
+
+```xml
+<ul>
+  <li>項目1</li>
+  <li>項目2
+    <ul>
+      <li>ネストした項目</li>
+    </ul>
+  </li>
+</ul>
+```
+
+### 順序付きリスト
+
+```markdown
+1. 最初
+2. 2番目
+3. 3番目
+```
+
+```xml
+<ol>
+  <li>最初</li>
+  <li>2番目</li>
+  <li>3番目</li>
+</ol>
+```
+
+### タスクリスト
+
+タスクリストはテキストとしてレンダリングされます（Confluenceにはネイティブチェックボックスサポートがありません）：
+
+```markdown
+- [ ] 未完了項目
+- [x] 完了項目
+```
+
+```xml
+<ul>
+  <li>[ ] 未完了項目</li>
+  <li>[x] 完了項目</li>
+</ul>
+```
+
+## 引用
+
+```markdown
+> これは引用です
+> 複数行にまたがります
+```
+
+```xml
+<blockquote>
+  <p>これは引用です 複数行にまたがります</p>
+</blockquote>
+```
+
+## コードブロック
+
+### 標準コードブロック
+
+````markdown
+```javascript
+function hello() {
+  console.log("Hello!");
+}
+```
+````
+
+```xml
+<ac:structured-macro ac:name="code">
+  <ac:parameter ac:name="language">javascript</ac:parameter>
+  <ac:plain-text-body><![CDATA[function hello() {
+  console.log("Hello!");
+}]]></ac:plain-text-body>
+</ac:structured-macro>
+```
+
+### Mermaidダイアグラム
+
+````markdown
+```mermaid
+graph TD
+    A --> B
+```
+````
+
+```xml
+<ac:structured-macro ac:name="mermaid">
+  <ac:plain-text-body><![CDATA[graph TD
+    A --> B]]></ac:plain-text-body>
+</ac:structured-macro>
+```
+
+## テーブル
+
+```markdown
+| ヘッダー1 | ヘッダー2 |
+|----------|----------|
+| セル1    | セル2    |
+```
+
+```xml
+<table>
+  <thead>
+    <tr>
+      <th>ヘッダー1</th>
+      <th>ヘッダー2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>セル1</td>
+      <td>セル2</td>
+    </tr>
+  </tbody>
+</table>
+```
+
+## 画像
+
+### ローカル画像（アップロードモード）
+
+```markdown
+![代替テキスト](./image.png)
+```
+
+```xml
+<ac:image>
+  <ri:attachment ri:filename="image.png"/>
+</ac:image>
+```
+
+### リモート画像
+
+```markdown
+![代替テキスト](https://example.com/image.png)
+```
+
+```xml
+<ac:image>
+  <ri:url ri:value="https://example.com/image.png"/>
+</ac:image>
+```
+
+## 水平線
+
+```markdown
+---
+```
+
+```xml
+<hr/>
+```
+
+## HTMLブロック
+
+生のHTMLブロックはセキュリティ上の理由から**削除**されます。Markdown構文のみが変換されます。
+
+## 特殊文字
+
+すべてのテキストコンテンツはXMLエスケープされます：
+
+| 文字 | エスケープ後 |
+|------|-------------|
+| `<` | `&lt;` |
+| `>` | `&gt;` |
+| `&` | `&amp;` |
+| `"` | `&quot;` |

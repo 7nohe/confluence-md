@@ -1,0 +1,103 @@
+---
+title: 画像の扱い
+description: Markdownに画像を含め、Confluenceで表示する方法
+---
+
+Actionはローカルとリモートの両方の画像をサポートし、柔軟な処理オプションを提供します。
+
+## ローカル画像
+
+ローカル画像はMarkdownファイルのディレクトリまたはカスタムベースディレクトリからの相対パスで解決されます。
+
+### デフォルトの動作
+
+```markdown
+![スクリーンショット](./images/screenshot.png)
+```
+
+デフォルトでは、画像パスはMarkdownファイルのディレクトリからの相対パスとして解決されます。
+
+### カスタムベースディレクトリ
+
+`attachments_base`を使用して別のベースディレクトリを指定：
+
+```yaml
+- uses: daiki/confluence-md@v1
+  with:
+    # ... その他の入力
+    source: docs/guide.md
+    attachments_base: 'assets/'
+```
+
+これで`![ロゴ](logo.png)`は`assets/logo.png`に解決されます。
+
+## 画像モード
+
+`image_mode`入力で画像の処理方法を制御します：
+
+### アップロードモード（デフォルト）
+
+```yaml
+image_mode: 'upload'
+```
+
+- ローカル画像はConfluenceページの添付ファイルとしてアップロード
+- 画像は`<ac:image><ri:attachment ri:filename="..."/></ac:image>`として表示
+- 用途：自己完結型ドキュメント、オフラインアクセス
+
+### 外部モード
+
+```yaml
+image_mode: 'external'
+```
+
+- 画像はURLで参照
+- リモート画像は外部リンクのまま
+- ローカル画像は別途URLでアクセス可能である必要あり
+- 用途：画像が別の場所でホストされている場合
+
+## リモート画像
+
+リモート画像（`http://`または`https://`で始まる）は設定に応じて処理されます：
+
+### デフォルト（外部参照）
+
+```markdown
+![図](https://example.com/diagram.png)
+```
+
+出力：`<ac:image><ri:url ri:value="https://example.com/diagram.png"/></ac:image>`
+
+### ダウンロードしてアップロード
+
+```yaml
+download_remote_images: 'true'
+```
+
+リモート画像をダウンロードして添付ファイルとしてアップロードします。これにより：
+- Confluenceページが自己完結型になる
+- 外部リンク切れから保護
+- 同期時のページ読み込み時間が増加する可能性
+
+## ファイル名の重複
+
+複数の画像が同じファイル名を持つ場合、Actionは数字のサフィックスを追加：
+
+```
+logo.png      -> logo.png
+logo.png      -> logo_1.png
+images/logo.png -> logo_2.png
+```
+
+## セキュリティ上の考慮事項
+
+- パストラバーサルは防止されています - 画像は`attachments_base`ディレクトリ内にある必要があります
+- Actionはアップロード前に画像パスを検証
+- リモート画像のダウンロードはネットワークタイムアウトの対象
+
+## サポートされる形式
+
+Confluenceがサポートするすべての画像形式が動作します：
+- PNG、JPG、JPEG、GIF
+- SVG
+- WebP（プレビューサポートが制限される場合あり）

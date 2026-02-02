@@ -1,0 +1,106 @@
+---
+title: Output Parameters
+description: Reference for all outputs provided by the GitHub Action.
+---
+
+The action provides several outputs that can be used in subsequent workflow steps.
+
+## Available Outputs
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `page_url` | string | Full URL to the updated Confluence page |
+| `page_id` | string | Confluence page ID |
+| `version` | string | New version number after update |
+| `updated` | string | `"true"` or `"false"` - whether the page was updated |
+| `attachments_uploaded` | string | Number of attachments uploaded |
+| `content_hash` | string | SHA256 hash (first 16 characters) of generated content |
+
+## Using Outputs
+
+Access outputs using the step's `id`:
+
+```yaml
+steps:
+  - uses: daiki/confluence-md@v1
+    id: confluence
+    with:
+      confluence_base_url: ${{ vars.CONFLUENCE_BASE_URL }}
+      email: ${{ secrets.CONFLUENCE_EMAIL }}
+      api_token: ${{ secrets.CONFLUENCE_API_TOKEN }}
+      source: docs/README.md
+
+  - name: Display Results
+    run: |
+      echo "Page URL: ${{ steps.confluence.outputs.page_url }}"
+      echo "Page ID: ${{ steps.confluence.outputs.page_id }}"
+      echo "Version: ${{ steps.confluence.outputs.version }}"
+      echo "Updated: ${{ steps.confluence.outputs.updated }}"
+      echo "Attachments: ${{ steps.confluence.outputs.attachments_uploaded }}"
+      echo "Content Hash: ${{ steps.confluence.outputs.content_hash }}"
+```
+
+## Output Details
+
+### page_url
+
+The complete URL to view the Confluence page:
+
+```
+https://your-domain.atlassian.net/wiki/spaces/SPACE/pages/123456789/Page+Title
+```
+
+### updated
+
+A string value indicating whether the page content was actually updated:
+
+- `"true"` - The page was updated with new content
+- `"false"` - The page was not updated (content unchanged or dry run)
+
+This is useful for conditional steps:
+
+```yaml
+- name: Notify on Update
+  if: steps.confluence.outputs.updated == 'true'
+  run: echo "Page was updated!"
+```
+
+### content_hash
+
+The first 16 characters of the SHA256 hash of the generated Confluence storage format. This hash is used for change detection when `skip_if_unchanged` is enabled.
+
+## Practical Examples
+
+### Post Slack Notification
+
+```yaml
+- uses: daiki/confluence-md@v1
+  id: confluence
+  with:
+    # ... inputs
+
+- name: Notify Slack
+  if: steps.confluence.outputs.updated == 'true'
+  uses: slackapi/slack-github-action@v1
+  with:
+    payload: |
+      {
+        "text": "Documentation updated: ${{ steps.confluence.outputs.page_url }}"
+      }
+```
+
+### Create Summary
+
+```yaml
+- uses: daiki/confluence-md@v1
+  id: confluence
+  with:
+    # ... inputs
+
+- name: Add Summary
+  run: |
+    echo "## Confluence Sync Results" >> $GITHUB_STEP_SUMMARY
+    echo "- **Page**: [${{ steps.confluence.outputs.page_id }}](${{ steps.confluence.outputs.page_url }})" >> $GITHUB_STEP_SUMMARY
+    echo "- **Updated**: ${{ steps.confluence.outputs.updated }}" >> $GITHUB_STEP_SUMMARY
+    echo "- **Version**: ${{ steps.confluence.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+```

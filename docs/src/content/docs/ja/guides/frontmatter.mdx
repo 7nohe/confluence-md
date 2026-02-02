@@ -1,0 +1,84 @@
+---
+title: フロントマター
+description: Markdownファイルでフロントマターを使用してConfluenceページ設定を行う
+---
+
+フロントマターは、Markdownファイルの先頭にある`---`で囲まれたYAMLメタデータです。
+
+## 基本的なフロントマター
+
+最も一般的な使い方は、ConfluenceページIDの指定です：
+
+```markdown
+---
+confluence_page_id: 123456789
+---
+
+# コンテンツ
+```
+
+## カスタムフロントマターキー
+
+デフォルトでは`confluence_page_id`を探しますが、カスタマイズ可能です：
+
+```yaml
+- uses: daiki/confluence-md@v1
+  with:
+    # ... その他の入力
+    frontmatter_page_id_key: 'page_id'
+```
+
+Markdownでは：
+
+```markdown
+---
+page_id: 123456789
+---
+```
+
+## フロントマター vs Action入力
+
+ページIDは2つの方法で指定できます：
+
+| 方法 | 優先度 | ユースケース |
+|------|--------|-------------|
+| フロントマター | 高い | 各MarkdownファイルをそれぞれのページにマッピングA場合 |
+| Action入力（`page_id`） | 低い（フォールバック） | 複数ファイルを同じページに同期する場合 |
+
+フォールバックの例：
+
+```yaml
+- uses: daiki/confluence-md@v1
+  with:
+    # ... その他の入力
+    page_id: '123456789'  # フロントマターがない場合のみ使用
+    source: docs/README.md
+```
+
+## 複数のメタデータフィールド
+
+フロントマターには他のメタデータも含められます - ActionはページIDキーのみを読み取ります：
+
+```markdown
+---
+title: ドキュメント
+author: 山田太郎
+date: 2024-01-15
+confluence_page_id: 123456789
+tags:
+  - ドキュメント
+  - api
+---
+
+# コンテンツ
+```
+
+## ページIDの確認方法
+
+ページIDはConfluence URLで確認できます：
+
+```
+https://your-domain.atlassian.net/wiki/spaces/SPACE/pages/123456789/Page+Title
+```
+
+また、Confluence APIや、ページメニュー（**...**）から**ページ情報**を選択しても確認できます。

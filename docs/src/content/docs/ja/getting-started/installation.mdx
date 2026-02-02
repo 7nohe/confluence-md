@@ -1,0 +1,74 @@
+---
+title: インストール
+description: リポジトリにConfluence MD GitHub Actionをセットアップする方法
+---
+
+## 前提条件
+
+このActionを使用する前に、以下が必要です：
+
+1. **Confluence Cloud**インスタンス（例：`https://your-domain.atlassian.net`）
+2. 対象ページの**編集権限**を持つConfluenceアカウント
+3. 認証用の**APIトークン**
+
+## APIトークンの作成
+
+1. [Atlassian APIトークン](https://id.atlassian.com/manage-profile/security/api-tokens)にアクセス
+2. **APIトークンを作成**をクリック
+3. わかりやすい名前を付ける（例：「GitHub Actions」）
+4. トークンをすぐにコピー（再表示できません）
+
+## GitHubシークレットの設定
+
+リポジトリに以下のシークレットを追加します：
+
+1. リポジトリの**Settings** > **Secrets and variables** > **Actions**に移動
+2. 以下のシークレットを追加：
+
+| シークレット名 | 説明 |
+|---------------|------|
+| `CONFLUENCE_EMAIL` | Confluenceアカウントのメールアドレス |
+| `CONFLUENCE_API_TOKEN` | 作成したAPIトークン |
+
+## ワークフローへのActionの追加
+
+`.github/workflows/confluence.yml`にワークフローファイルを作成：
+
+```yaml
+name: Confluenceに同期
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**/*.md'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: daiki/confluence-md@v1
+        with:
+          confluence_base_url: https://your-domain.atlassian.net
+          email: ${{ secrets.CONFLUENCE_EMAIL }}
+          api_token: ${{ secrets.CONFLUENCE_API_TOKEN }}
+          source: docs/README.md
+```
+
+## ページIDの確認方法
+
+ページIDはConfluenceページのURLで確認できます：
+
+```
+https://your-domain.atlassian.net/wiki/spaces/SPACE/pages/123456789/Page+Title
+                                                       ^^^^^^^^^
+                                                       これがページID
+```
+
+ページIDは以下のいずれかで指定できます：
+- ワークフローファイルの`page_id`入力
+- Markdownファイルのフロントマター（推奨）
+
+フロントマターの例は[クイックスタート](/ja/getting-started/quick-start/)を参照してください。

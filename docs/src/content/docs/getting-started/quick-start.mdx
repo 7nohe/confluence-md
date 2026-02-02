@@ -1,0 +1,89 @@
+---
+title: Quick Start
+description: Get up and running with Confluence MD in 5 minutes.
+---
+
+This guide will help you sync your first Markdown file to Confluence.
+
+## Step 1: Prepare Your Markdown File
+
+Create a Markdown file with frontmatter containing the Confluence page ID:
+
+```markdown
+---
+confluence_page_id: 123456789
+---
+
+# My Documentation
+
+This content will be synced to Confluence.
+
+## Features
+
+- **Bold** and *italic* text
+- Code blocks with syntax highlighting
+- Tables and lists
+```
+
+## Step 2: Create the Workflow
+
+Create `.github/workflows/confluence.yml`:
+
+```yaml
+name: Sync to Confluence
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**/*.md'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: daiki/confluence-md@v1
+        with:
+          confluence_base_url: ${{ vars.CONFLUENCE_BASE_URL }}
+          email: ${{ secrets.CONFLUENCE_EMAIL }}
+          api_token: ${{ secrets.CONFLUENCE_API_TOKEN }}
+          source: docs/README.md
+```
+
+## Step 3: Configure Secrets
+
+Add the required secrets to your repository (see [Installation](/getting-started/installation/) for details).
+
+## Step 4: Push and Verify
+
+1. Commit and push your changes
+2. Go to **Actions** tab to see the workflow run
+3. Check your Confluence page for the updated content
+
+## Using Action Outputs
+
+The action provides useful outputs you can use in subsequent steps:
+
+```yaml
+- uses: daiki/confluence-md@v1
+  id: confluence
+  with:
+    confluence_base_url: ${{ vars.CONFLUENCE_BASE_URL }}
+    email: ${{ secrets.CONFLUENCE_EMAIL }}
+    api_token: ${{ secrets.CONFLUENCE_API_TOKEN }}
+    source: docs/README.md
+
+- name: Show Results
+  run: |
+    echo "Page URL: ${{ steps.confluence.outputs.page_url }}"
+    echo "Updated: ${{ steps.confluence.outputs.updated }}"
+    echo "Version: ${{ steps.confluence.outputs.version }}"
+```
+
+## Next Steps
+
+- Learn about [Frontmatter options](/guides/frontmatter/)
+- Understand [Image handling](/guides/images/)
+- See all [Input parameters](/reference/inputs/)

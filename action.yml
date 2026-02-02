@@ -1,0 +1,76 @@
+name: 'Markdown to Confluence'
+description: 'Convert Markdown (GFM) to Confluence Cloud storage format and update a page'
+author: '7nohe'
+
+branding:
+  icon: 'file-text'
+  color: 'blue'
+
+inputs:
+  confluence_base_url:
+    description: 'Confluence base URL (e.g., https://example.atlassian.net)'
+    required: true
+  page_id:
+    description: 'Confluence page ID (fallback if frontmatter missing)'
+    required: false
+  email:
+    description: 'Confluence account email'
+    required: true
+  api_token:
+    description: 'Confluence API token'
+    required: true
+  source:
+    description: 'Markdown file path'
+    required: true
+  attachments_base:
+    description: 'Base directory for resolving relative image paths (defaults to source directory)'
+    required: false
+  title_override:
+    description: 'Override page title'
+    required: false
+  frontmatter_page_id_key:
+    description: 'Frontmatter key used to extract the page ID'
+    required: false
+    default: 'confluence_page_id'
+  image_mode:
+    description: 'Image handling mode: upload or external'
+    required: false
+    default: 'upload'
+  download_remote_images:
+    description: 'Download remote images and upload as attachments'
+    required: false
+    default: 'false'
+  skip_if_unchanged:
+    description: 'Skip update when storage output is identical'
+    required: false
+    default: 'true'
+  dry_run:
+    description: 'Build output but do not update Confluence'
+    required: false
+    default: 'false'
+  notify_watchers:
+    description: 'Accepted but currently ignored'
+    required: false
+    default: 'false'
+  user_agent:
+    description: 'HTTP user agent'
+    required: false
+    default: 'confluence-md'
+
+outputs:
+  page_url:
+    description: 'URL of the updated Confluence page'
+  page_id:
+    description: 'ID of the updated Confluence page'
+  version:
+    description: 'New version number of the page'
+  updated:
+    description: 'Whether the page was actually updated (true/false)'
+  attachments_uploaded:
+    description: 'Number of attachments uploaded'
+  content_hash:
+    description: 'Hash of the generated storage content'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'

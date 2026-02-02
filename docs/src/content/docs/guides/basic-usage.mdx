@@ -1,0 +1,108 @@
+---
+title: Basic Usage
+description: Learn the fundamental patterns for using Confluence MD.
+---
+
+## Workflow Patterns
+
+### Single File Sync
+
+The simplest use case - sync one Markdown file to one Confluence page:
+
+```yaml
+- uses: daiki/confluence-md@v1
+  with:
+    confluence_base_url: https://your-domain.atlassian.net
+    email: ${{ secrets.CONFLUENCE_EMAIL }}
+    api_token: ${{ secrets.CONFLUENCE_API_TOKEN }}
+    source: docs/README.md
+```
+
+### Multiple Files
+
+Use a matrix strategy to sync multiple files:
+
+```yaml
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        file:
+          - docs/guide.md
+          - docs/api.md
+          - docs/faq.md
+    steps:
+      - uses: actions/checkout@v4
+      - uses: daiki/confluence-md@v1
+        with:
+          confluence_base_url: ${{ vars.CONFLUENCE_BASE_URL }}
+          email: ${{ secrets.CONFLUENCE_EMAIL }}
+          api_token: ${{ secrets.CONFLUENCE_API_TOKEN }}
+          source: ${{ matrix.file }}
+```
+
+### Conditional Sync
+
+Only sync when specific files change:
+
+```yaml
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**/*.md'
+```
+
+## Dry Run Mode
+
+Test your configuration without updating Confluence:
+
+```yaml
+- uses: daiki/confluence-md@v1
+  with:
+    confluence_base_url: ${{ vars.CONFLUENCE_BASE_URL }}
+    email: ${{ secrets.CONFLUENCE_EMAIL }}
+    api_token: ${{ secrets.CONFLUENCE_API_TOKEN }}
+    source: docs/README.md
+    dry_run: 'true'
+```
+
+This generates the Confluence storage format and outputs without making any API calls to update the page.
+
+## Skip Unchanged Content
+
+By default, the action skips updates when content hasn't changed:
+
+```yaml
+- uses: daiki/confluence-md@v1
+  with:
+    # ... other inputs
+    skip_if_unchanged: 'true'  # This is the default
+```
+
+The action computes a SHA256 hash of the generated content and compares it with the existing page. If they match, no update is performed.
+
+## Overriding the Page Title
+
+You can override the page title without modifying the Confluence page settings:
+
+```yaml
+- uses: daiki/confluence-md@v1
+  with:
+    # ... other inputs
+    title_override: 'My Custom Title'
+```
+
+## Environment Variables vs Secrets
+
+Use GitHub **variables** for non-sensitive data and **secrets** for sensitive data:
+
+```yaml
+- uses: daiki/confluence-md@v1
+  with:
+    confluence_base_url: ${{ vars.CONFLUENCE_BASE_URL }}  # Variable
+    email: ${{ secrets.CONFLUENCE_EMAIL }}                 # Secret
+    api_token: ${{ secrets.CONFLUENCE_API_TOKEN }}         # Secret
+    source: docs/README.md
+```

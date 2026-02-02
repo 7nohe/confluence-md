@@ -1,0 +1,103 @@
+---
+title: Image Handling
+description: How to include images in your Markdown and have them appear in Confluence.
+---
+
+The action supports both local and remote images with flexible handling options.
+
+## Local Images
+
+Local images are resolved relative to your Markdown file or a custom base directory.
+
+### Default Behavior
+
+```markdown
+![Screenshot](./images/screenshot.png)
+```
+
+By default, the image path is resolved relative to the Markdown file's directory.
+
+### Custom Base Directory
+
+Use `attachments_base` to specify a different base directory:
+
+```yaml
+- uses: daiki/confluence-md@v1
+  with:
+    # ... other inputs
+    source: docs/guide.md
+    attachments_base: 'assets/'
+```
+
+Now `![Logo](logo.png)` resolves to `assets/logo.png`.
+
+## Image Modes
+
+The `image_mode` input controls how images are handled:
+
+### Upload Mode (Default)
+
+```yaml
+image_mode: 'upload'
+```
+
+- Local images are uploaded as Confluence page attachments
+- Images appear as `<ac:image><ri:attachment ri:filename="..."/></ac:image>`
+- Best for: Self-contained documentation, offline access
+
+### External Mode
+
+```yaml
+image_mode: 'external'
+```
+
+- Images are referenced by URL
+- Remote images remain as external links
+- Local images still need to be accessible via URL
+- Best for: When images are hosted elsewhere
+
+## Remote Images
+
+Remote images (starting with `http://` or `https://`) are handled based on your settings:
+
+### Default (External Reference)
+
+```markdown
+![Diagram](https://example.com/diagram.png)
+```
+
+Renders as: `<ac:image><ri:url ri:value="https://example.com/diagram.png"/></ac:image>`
+
+### Download and Upload
+
+```yaml
+download_remote_images: 'true'
+```
+
+Remote images are downloaded and uploaded as attachments. This:
+- Makes your Confluence page self-contained
+- Protects against external link rot
+- May increase page load time during sync
+
+## Duplicate Filenames
+
+When multiple images have the same filename, the action adds numeric suffixes:
+
+```
+logo.png      -> logo.png
+logo.png      -> logo_1.png
+images/logo.png -> logo_2.png
+```
+
+## Security Considerations
+
+- Path traversal is prevented - images must be within the `attachments_base` directory
+- The action validates image paths before uploading
+- Remote image downloads are subject to network timeouts
+
+## Supported Formats
+
+All image formats supported by Confluence work:
+- PNG, JPG, JPEG, GIF
+- SVG
+- WebP (may have limited preview support)

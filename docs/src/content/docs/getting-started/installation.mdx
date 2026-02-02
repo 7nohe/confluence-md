@@ -1,0 +1,74 @@
+---
+title: Installation
+description: How to set up the Confluence MD GitHub Action in your repository.
+---
+
+## Prerequisites
+
+Before using this action, you need:
+
+1. A **Confluence Cloud** instance (e.g., `https://your-domain.atlassian.net`)
+2. A Confluence account with **edit permissions** for the target page
+3. An **API token** for authentication
+
+## Creating an API Token
+
+1. Go to [Atlassian API Tokens](https://id.atlassian.com/manage-profile/security/api-tokens)
+2. Click **Create API token**
+3. Give it a descriptive name (e.g., "GitHub Actions")
+4. Copy the token immediately (you won't be able to see it again)
+
+## Setting Up GitHub Secrets
+
+Add the following secrets to your repository:
+
+1. Go to your repository's **Settings** > **Secrets and variables** > **Actions**
+2. Add the following secrets:
+
+| Secret Name | Description |
+|-------------|-------------|
+| `CONFLUENCE_EMAIL` | Your Confluence account email |
+| `CONFLUENCE_API_TOKEN` | The API token you created |
+
+## Adding the Action to Your Workflow
+
+Create a workflow file at `.github/workflows/confluence.yml`:
+
+```yaml
+name: Sync to Confluence
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**/*.md'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: daiki/confluence-md@v1
+        with:
+          confluence_base_url: https://your-domain.atlassian.net
+          email: ${{ secrets.CONFLUENCE_EMAIL }}
+          api_token: ${{ secrets.CONFLUENCE_API_TOKEN }}
+          source: docs/README.md
+```
+
+## Finding Your Page ID
+
+The page ID can be found in the Confluence page URL:
+
+```
+https://your-domain.atlassian.net/wiki/spaces/SPACE/pages/123456789/Page+Title
+                                                       ^^^^^^^^^
+                                                       This is the page ID
+```
+
+You can specify the page ID either:
+- In the workflow file using the `page_id` input
+- In the Markdown file's frontmatter (recommended)
+
+See [Quick Start](/getting-started/quick-start/) for frontmatter examples.

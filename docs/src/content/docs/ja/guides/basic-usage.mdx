@@ -1,0 +1,108 @@
+---
+title: 基本的な使い方
+description: Confluence MDの基本的な使用パターンを学ぶ
+---
+
+## ワークフローパターン
+
+### 単一ファイルの同期
+
+最もシンプルなユースケース - 1つのMarkdownファイルを1つのConfluenceページに同期：
+
+```yaml
+- uses: daiki/confluence-md@v1
+  with:
+    confluence_base_url: https://your-domain.atlassian.net
+    email: ${{ secrets.CONFLUENCE_EMAIL }}
+    api_token: ${{ secrets.CONFLUENCE_API_TOKEN }}
+    source: docs/README.md
+```
+
+### 複数ファイル
+
+マトリックス戦略を使用して複数のファイルを同期：
+
+```yaml
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        file:
+          - docs/guide.md
+          - docs/api.md
+          - docs/faq.md
+    steps:
+      - uses: actions/checkout@v4
+      - uses: daiki/confluence-md@v1
+        with:
+          confluence_base_url: ${{ vars.CONFLUENCE_BASE_URL }}
+          email: ${{ secrets.CONFLUENCE_EMAIL }}
+          api_token: ${{ secrets.CONFLUENCE_API_TOKEN }}
+          source: ${{ matrix.file }}
+```
+
+### 条件付き同期
+
+特定のファイルが変更されたときのみ同期：
+
+```yaml
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**/*.md'
+```
+
+## ドライランモード
+
+Confluenceを更新せずに設定をテスト：
+
+```yaml
+- uses: daiki/confluence-md@v1
+  with:
+    confluence_base_url: ${{ vars.CONFLUENCE_BASE_URL }}
+    email: ${{ secrets.CONFLUENCE_EMAIL }}
+    api_token: ${{ secrets.CONFLUENCE_API_TOKEN }}
+    source: docs/README.md
+    dry_run: 'true'
+```
+
+Confluenceストレージ形式を生成し、出力しますが、ページを更新するAPIコールは行いません。
+
+## 未変更コンテンツのスキップ
+
+デフォルトでは、コンテンツが変更されていない場合は更新をスキップします：
+
+```yaml
+- uses: daiki/confluence-md@v1
+  with:
+    # ... その他の入力
+    skip_if_unchanged: 'true'  # これがデフォルト
+```
+
+Actionは生成されたコンテンツのSHA256ハッシュを計算し、既存のページと比較します。一致する場合、更新は実行されません。
+
+## ページタイトルの上書き
+
+Confluenceページの設定を変更せずにページタイトルを上書きできます：
+
+```yaml
+- uses: daiki/confluence-md@v1
+  with:
+    # ... その他の入力
+    title_override: 'カスタムタイトル'
+```
+
+## 環境変数 vs シークレット
+
+非機密データにはGitHub **variables**を、機密データには**secrets**を使用：
+
+```yaml
+- uses: daiki/confluence-md@v1
+  with:
+    confluence_base_url: ${{ vars.CONFLUENCE_BASE_URL }}  # Variable
+    email: ${{ secrets.CONFLUENCE_EMAIL }}                 # Secret
+    api_token: ${{ secrets.CONFLUENCE_API_TOKEN }}         # Secret
+    source: docs/README.md
+```

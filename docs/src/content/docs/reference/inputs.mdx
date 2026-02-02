@@ -1,0 +1,118 @@
+---
+title: Input Parameters
+description: Complete reference of all input parameters for the GitHub Action.
+---
+
+## Required Inputs
+
+| Input | Description |
+|-------|-------------|
+| `confluence_base_url` | Confluence instance URL (e.g., `https://example.atlassian.net`) |
+| `email` | Confluence account email for authentication |
+| `api_token` | Confluence API token for authentication |
+| `source` | Path to the Markdown file to convert |
+
+## Optional Inputs
+
+### Page Configuration
+
+| Input | Default | Description |
+|-------|---------|-------------|
+| `page_id` | - | Confluence page ID (fallback if frontmatter is missing) |
+| `frontmatter_page_id_key` | `confluence_page_id` | YAML frontmatter key for page ID |
+| `title_override` | - | Override the Confluence page title |
+
+### Image Handling
+
+| Input | Default | Description |
+|-------|---------|-------------|
+| `attachments_base` | Source directory | Base directory for resolving relative image paths |
+| `image_mode` | `upload` | `upload` (as attachments) or `external` (use URLs) |
+| `download_remote_images` | `false` | Download remote images and upload as attachments |
+
+### Behavior
+
+| Input | Default | Description |
+|-------|---------|-------------|
+| `skip_if_unchanged` | `true` | Skip update when content hash matches |
+| `dry_run` | `false` | Generate output but don't update Confluence |
+| `notify_watchers` | `false` | Accepted but currently ignored |
+
+### Advanced
+
+| Input | Default | Description |
+|-------|---------|-------------|
+| `user_agent` | `confluence-md` | HTTP User-Agent header |
+
+## Input Details
+
+### confluence_base_url
+
+The base URL of your Confluence Cloud instance. Must include the protocol (`https://`).
+
+```yaml
+confluence_base_url: https://your-company.atlassian.net
+```
+
+Trailing slashes are automatically normalized.
+
+### page_id
+
+The Confluence page ID where content will be published. This serves as a fallback when the frontmatter doesn't contain a page ID.
+
+```yaml
+page_id: '123456789'
+```
+
+### image_mode
+
+Controls how images are handled:
+
+- `upload`: Local images are uploaded as page attachments
+- `external`: Images are referenced by URL (local images must be accessible externally)
+
+### skip_if_unchanged
+
+When `true`, the action computes a SHA256 hash of the generated Confluence storage format and compares it with a hash stored in the page. If they match, no update is performed.
+
+This prevents unnecessary version increments and notifications.
+
+### dry_run
+
+When `true`, the action:
+- Converts Markdown to Confluence storage format
+- Outputs the generated content
+- Does NOT make any API calls to update the page
+- Does NOT upload attachments
+
+Useful for testing your configuration.
+
+## Example: All Inputs
+
+```yaml
+- uses: daiki/confluence-md@v1
+  with:
+    # Required
+    confluence_base_url: ${{ vars.CONFLUENCE_BASE_URL }}
+    email: ${{ secrets.CONFLUENCE_EMAIL }}
+    api_token: ${{ secrets.CONFLUENCE_API_TOKEN }}
+    source: docs/README.md
+
+    # Page configuration
+    page_id: '123456789'
+    frontmatter_page_id_key: confluence_page_id
+    title_override: 'Documentation'
+
+    # Image handling
+    attachments_base: 'assets/'
+    image_mode: upload
+    download_remote_images: 'true'
+
+    # Behavior
+    skip_if_unchanged: 'true'
+    dry_run: 'false'
+    notify_watchers: 'false'
+
+    # Advanced
+    user_agent: my-custom-agent
+```

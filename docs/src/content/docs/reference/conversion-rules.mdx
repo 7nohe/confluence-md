@@ -1,0 +1,237 @@
+---
+title: Conversion Rules
+description: How Markdown elements are converted to Confluence storage format.
+---
+
+This reference documents how each Markdown element is converted to Confluence's storage format (XHTML-based).
+
+## Text Formatting
+
+| Markdown | Confluence |
+|----------|------------|
+| `**bold**` | `<strong>bold</strong>` |
+| `*italic*` | `<em>italic</em>` |
+| `~~strikethrough~~` | `<del>strikethrough</del>` |
+| `` `code` `` | `<code>code</code>` |
+
+## Headings
+
+```markdown
+# Heading 1
+## Heading 2
+### Heading 3
+```
+
+Converts to:
+
+```xml
+<h1>Heading 1</h1>
+<h2>Heading 2</h2>
+<h3>Heading 3</h3>
+```
+
+Headings up to `<h6>` are supported.
+
+## Paragraphs
+
+Plain text paragraphs become `<p>` elements:
+
+```markdown
+This is a paragraph.
+
+This is another paragraph.
+```
+
+```xml
+<p>This is a paragraph.</p>
+<p>This is another paragraph.</p>
+```
+
+## Links
+
+```markdown
+[Link text](https://example.com)
+```
+
+```xml
+<a href="https://example.com">Link text</a>
+```
+
+## Lists
+
+### Unordered Lists
+
+```markdown
+- Item 1
+- Item 2
+  - Nested item
+```
+
+```xml
+<ul>
+  <li>Item 1</li>
+  <li>Item 2
+    <ul>
+      <li>Nested item</li>
+    </ul>
+  </li>
+</ul>
+```
+
+### Ordered Lists
+
+```markdown
+1. First
+2. Second
+3. Third
+```
+
+```xml
+<ol>
+  <li>First</li>
+  <li>Second</li>
+  <li>Third</li>
+</ol>
+```
+
+### Task Lists
+
+Task lists are rendered as text (Confluence doesn't have native checkbox support):
+
+```markdown
+- [ ] Todo item
+- [x] Completed item
+```
+
+```xml
+<ul>
+  <li>[ ] Todo item</li>
+  <li>[x] Completed item</li>
+</ul>
+```
+
+## Blockquotes
+
+```markdown
+> This is a quote
+> spanning multiple lines
+```
+
+```xml
+<blockquote>
+  <p>This is a quote spanning multiple lines</p>
+</blockquote>
+```
+
+## Code Blocks
+
+### Standard Code Blocks
+
+````markdown
+```javascript
+function hello() {
+  console.log("Hello!");
+}
+```
+````
+
+```xml
+<ac:structured-macro ac:name="code">
+  <ac:parameter ac:name="language">javascript</ac:parameter>
+  <ac:plain-text-body><![CDATA[function hello() {
+  console.log("Hello!");
+}]]></ac:plain-text-body>
+</ac:structured-macro>
+```
+
+### Mermaid Diagrams
+
+````markdown
+```mermaid
+graph TD
+    A --> B
+```
+````
+
+```xml
+<ac:structured-macro ac:name="mermaid">
+  <ac:plain-text-body><![CDATA[graph TD
+    A --> B]]></ac:plain-text-body>
+</ac:structured-macro>
+```
+
+## Tables
+
+```markdown
+| Header 1 | Header 2 |
+|----------|----------|
+| Cell 1   | Cell 2   |
+```
+
+```xml
+<table>
+  <thead>
+    <tr>
+      <th>Header 1</th>
+      <th>Header 2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Cell 1</td>
+      <td>Cell 2</td>
+    </tr>
+  </tbody>
+</table>
+```
+
+## Images
+
+### Local Images (Upload Mode)
+
+```markdown
+![Alt text](./image.png)
+```
+
+```xml
+<ac:image>
+  <ri:attachment ri:filename="image.png"/>
+</ac:image>
+```
+
+### Remote Images
+
+```markdown
+![Alt text](https://example.com/image.png)
+```
+
+```xml
+<ac:image>
+  <ri:url ri:value="https://example.com/image.png"/>
+</ac:image>
+```
+
+## Horizontal Rules
+
+```markdown
+---
+```
+
+```xml
+<hr/>
+```
+
+## HTML Blocks
+
+Raw HTML blocks are **stripped** for security reasons. Only Markdown syntax is converted.
+
+## Special Characters
+
+All text content is XML-escaped:
+
+| Character | Escaped |
+|-----------|---------|
+| `<` | `&lt;` |
+| `>` | `&gt;` |
+| `&` | `&amp;` |
+| `"` | `&quot;` |

@@ -1,0 +1,68 @@
+{
+  "name": "@7nohe/confluence-md",
+  "version": "1.0.0",
+  "description": "GitHub Action and CLI to convert Markdown (GFM) to Confluence Cloud storage format",
+  "main": "dist/index.js",
+  "bin": {
+    "confluence-md": "./dist/cli/index.js",
+    "cfmd": "./dist/cli/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/7nohe/confluence-md.git"
+  },
+  "files": [
+    "dist/**/*",
+    "action.yml",
+    "LICENSE",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "npm run build:action && npm run build:cli",
+    "build:action": "ncc build src/main.ts -o dist --source-map --license licenses.txt",
+    "build:cli": "ncc build src/cli.ts -o dist/cli --source-map --license licenses.txt",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "biome lint ./src ./tests",
+    "lint:fix": "biome lint --write ./src ./tests",
+    "format": "biome format ./src ./tests",
+    "format:fix": "biome format --write ./src ./tests",
+    "check": "biome check ./src ./tests",
+    "check:fix": "biome check --write ./src ./tests",
+    "typecheck": "tsc --noEmit",
+    "ci": "npm run check && npm run typecheck && npm run test && npm run build"
+  },
+  "keywords": [
+    "github-action",
+    "cli",
+    "confluence",
+    "markdown",
+    "documentation"
+  ],
+  "author": "7nohe",
+  "license": "MIT",
+  "dependencies": {
+    "@actions/core": "^1.10.1",
+    "@actions/http-client": "^2.2.1",
+    "commander": "^14.0.2",
+    "gray-matter": "^4.0.3",
+    "js-yaml": "^4.1.1",
+    "remark-gfm": "^4.0.0",
+    "remark-parse": "^11.0.0",
+    "unified": "^11.0.4"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.3.11",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20.10.0",
+    "@vercel/ncc": "^0.38.1",
+    "typescript": "^5.3.2",
+    "vitest": "^1.1.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
