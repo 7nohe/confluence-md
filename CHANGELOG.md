@@ -6,7 +6,7 @@ Semantic Versioning.
 
 ## [Unreleased]
 
-## [1.0.0] - 2026-01-10
+## [0.1.0] - 2026-03-11
 ### Added
 - Convert Markdown (GFM) to Confluence storage format.
 - Support Mermaid code fences and core formatting elements.
