@@ -1,7 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { runSourceExecution, resolveMarkdownFiles } from '../src/execution';
+import { resolveMarkdownFiles, runSourceExecution } from '../src/execution';
 import type { ActionInputs } from '../src/types';
 
 vi.mock('node:fs');

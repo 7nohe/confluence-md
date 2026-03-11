@@ -1,6 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { runConversion, type RunResult } from './core';
+import { type RunResult, runConversion } from './core';
 import { extractFrontmatter, getPageIdFromFrontmatter } from './frontmatter';
 import { validateInputs } from './inputs';
 import { getLogger } from './logger';
@@ -65,7 +65,10 @@ async function runSingleSource(inputs: ActionInputs, sourcePath: string): Promis
 	const markdown = fs.readFileSync(sourcePath, 'utf-8');
 	const { data: frontmatter, content: markdownBody } = extractFrontmatter(markdown);
 	const resolvedInputs = createInputsForFile(inputs, sourcePath);
-	const frontmatterPageId = getPageIdFromFrontmatter(frontmatter, resolvedInputs.frontmatterPageIdKey);
+	const frontmatterPageId = getPageIdFromFrontmatter(
+		frontmatter,
+		resolvedInputs.frontmatterPageIdKey
+	);
 	const pageId = validateInputs(resolvedInputs, frontmatterPageId);
 
 	return runConversion({
@@ -127,7 +130,10 @@ async function runSingleSourceForDirectory(
 	const markdown = fs.readFileSync(file.path, 'utf-8');
 	const { data: frontmatter, content: markdownBody } = extractFrontmatter(markdown);
 	const resolvedInputs = createInputsForFile(inputs, file.path);
-	const frontmatterPageId = getPageIdFromFrontmatter(frontmatter, resolvedInputs.frontmatterPageIdKey);
+	const frontmatterPageId = getPageIdFromFrontmatter(
+		frontmatter,
+		resolvedInputs.frontmatterPageIdKey
+	);
 	const pageId = validateInputs(resolvedInputs, frontmatterPageId, { allowInputFallback: false });
 	const result = await runConversion({
 		inputs: resolvedInputs,
@@ -150,7 +156,9 @@ function createInputsForFile(inputs: ActionInputs, filePath: string): ActionInpu
 	return {
 		...inputs,
 		source: filePath,
-		attachmentsBase: inputs.attachmentsBaseProvided ? inputs.attachmentsBase : path.dirname(filePath),
+		attachmentsBase: inputs.attachmentsBaseProvided
+			? inputs.attachmentsBase
+			: path.dirname(filePath),
 		titleOverride: undefined,
 	};
 }
@@ -173,7 +181,8 @@ function collectMarkdownFiles(root: string, currentDirectory: string): ResolvedS
 
 		files.push({
 			path: fullPath,
-			displayPath: path.relative(process.cwd(), fullPath) || path.relative(root, fullPath) || entry.name,
+			displayPath:
+				path.relative(process.cwd(), fullPath) || path.relative(root, fullPath) || entry.name,
 		});
 	}
 

@@ -32,7 +32,10 @@ async function run(): Promise<void> {
 			core.setOutput('page_id', execution.result.outputs.pageId);
 			core.setOutput('version', execution.result.outputs.version.toString());
 			core.setOutput('updated', execution.result.outputs.updated.toString());
-			core.setOutput('attachments_uploaded', execution.result.outputs.attachmentsUploaded.toString());
+			core.setOutput(
+				'attachments_uploaded',
+				execution.result.outputs.attachmentsUploaded.toString()
+			);
 			core.setOutput('content_hash', execution.result.outputs.contentHash);
 
 			// Summary (only for non-dry-run, as dry-run prints its own summary)
