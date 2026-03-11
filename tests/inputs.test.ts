@@ -52,6 +52,7 @@ describe('inputs.ts', () => {
 			const inputs = getInputs();
 
 			expect(inputs.attachmentsBase).toBe('docs/pages');
+			expect(inputs.attachmentsBaseProvided).toBe(false);
 		});
 
 		it('should use provided attachmentsBase', () => {
@@ -66,6 +67,7 @@ describe('inputs.ts', () => {
 			const inputs = getInputs();
 
 			expect(inputs.attachmentsBase).toBe('assets/images');
+			expect(inputs.attachmentsBaseProvided).toBe(true);
 		});
 
 		it('should mask API token using setSecret', () => {
@@ -382,6 +384,28 @@ describe('inputs.ts', () => {
 			);
 		});
 
+		it('should ignore input pageId when fallback is disabled', () => {
+			const inputs = {
+				confluenceBaseUrl: 'https://example.atlassian.net/wiki',
+				email: 'user@example.com',
+				apiToken: 'token',
+				source: 'test.md',
+				attachmentsBase: '.',
+				pageId: '12345',
+				frontmatterPageIdKey: 'confluence_page_id',
+				imageMode: 'upload' as const,
+				downloadRemoteImages: false,
+				skipIfUnchanged: false,
+				dryRun: false,
+				notifyWatchers: false,
+				userAgent: 'test',
+			};
+
+			expect(() => validateInputs(inputs, undefined, { allowInputFallback: false })).toThrow(
+				"Page ID not found. Please provide it via the 'page_id' input or in frontmatter using the key 'confluence_page_id'."
+			);
+		});
+
 		it('should include custom frontmatter key in error message', () => {
 			const inputs = {
 				confluenceBaseUrl: 'https://example.atlassian.net/wiki',
@@ -426,6 +450,7 @@ describe('inputs.ts', () => {
 			});
 
 			expect(inputs.attachmentsBase).toBe('docs/pages');
+			expect(inputs.attachmentsBaseProvided).toBe(false);
 		});
 
 		it('should use provided attachmentsBase', () => {
@@ -438,6 +463,7 @@ describe('inputs.ts', () => {
 			});
 
 			expect(inputs.attachmentsBase).toBe('assets/images');
+			expect(inputs.attachmentsBaseProvided).toBe(true);
 		});
 
 		it('should remove trailing slash from base URL', () => {

@@ -5,6 +5,7 @@ export interface ActionInputs {
 	apiToken: string;
 	source: string;
 	attachmentsBase: string;
+	attachmentsBaseProvided?: boolean;
 	titleOverride?: string;
 	frontmatterPageIdKey: string;
 	imageMode: 'upload' | 'external';
@@ -98,4 +99,38 @@ export interface ActionOutputs {
 	updated: boolean;
 	attachmentsUploaded: number;
 	contentHash: string;
+}
+
+export interface ResolvedSourceFile {
+	path: string;
+	displayPath: string;
+}
+
+export interface MultiRunItemResult {
+	source: string;
+	pageUrl: string;
+	pageId: string;
+	version: number;
+	updated: boolean;
+	attachmentsUploaded: number;
+	contentHash: string;
+}
+
+export interface MultiRunFailure {
+	source: string;
+	error: string;
+}
+
+export interface MultiRunSummary {
+	total: number;
+	succeeded: number;
+	failed: number;
+	updated: number;
+	attachmentsUploaded: number;
+}
+
+export interface MultiRunResult {
+	summary: MultiRunSummary;
+	results: MultiRunItemResult[];
+	failures: MultiRunFailure[];
 }

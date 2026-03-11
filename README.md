@@ -10,6 +10,7 @@ Available as both a **GitHub Action** and a **CLI tool**.
 - Local image uploads or external image URLs
 - Skip update when content is unchanged
 - Dry run mode to inspect generated storage XML
+- Directory sync for multiple Markdown files
 
 ## Requirements
 - Confluence Cloud site
@@ -42,6 +43,11 @@ npx confluence-md docs/page.md --dry-run
 
 # JSON output for scripting
 npx confluence-md docs/page.md --json
+
+# Directory sync (page IDs must be defined in frontmatter)
+npx confluence-md docs/ \
+  --url https://example.atlassian.net \
+  --email you@example.com
 
 # Short alias
 cfmd docs/page.md --dry-run
@@ -78,6 +84,26 @@ skip_if_unchanged: true
 
 Note: API token must be set via `CONFLUENCE_API_TOKEN` environment variable for security.
 
+#### Directory Sync
+
+You can pass a directory to `source` in both CLI and GitHub Action. The tool scans the directory recursively and syncs every `*.md` file in order.
+
+Each Markdown file must define its own page ID in frontmatter:
+
+```markdown
+---
+confluence_page_id: 123456
+---
+
+# Page title
+```
+
+When `source` is a directory:
+
+- `page_id` is ignored to prevent accidental overwrites
+- `attachments_base` defaults to each file's own directory when not explicitly set
+- CLI `--json` returns aggregate results and per-file details
+
 ### GitHub Action
 
 ```yaml
@@ -96,7 +122,7 @@ jobs:
           confluence_base_url: https://example.atlassian.net
           email: you@example.com
           api_token: ${{ secrets.CONFLUENCE_API_TOKEN }}
-          source: docs/page.md
+          source: docs/
 ```
 
 ### Frontmatter page ID
@@ -109,17 +135,17 @@ confluence_page_id: 123456
 # Page title
 ```
 
-You can also pass `page_id` directly as an input.
+You can also pass `page_id` directly as an input for single-file syncs.
 
 ## GitHub Action Inputs
 
 | Name | Required | Default | Description |
 | --- | --- | --- | --- |
 | confluence_base_url | yes | - | Confluence base URL (e.g. https://example.atlassian.net) |
-| page_id | no | - | Confluence page ID (fallback if frontmatter missing) |
+| page_id | no | - | Confluence page ID (fallback if frontmatter missing in single-file mode) |
 | email | yes | - | Confluence account email |
 | api_token | yes | - | Confluence API token |
-| source | yes | - | Markdown file path |
+| source | yes | - | Markdown file or directory path |
 | attachments_base | no | dir(source) | Base directory for resolving relative image paths |
 | title_override | no | - | Override page title |
 | frontmatter_page_id_key | no | confluence_page_id | Frontmatter key used to extract the page ID |
@@ -140,15 +166,25 @@ You can also pass `page_id` directly as an input.
 | updated | Whether the page was actually updated (true or false) |
 | attachments_uploaded | Number of attachments uploaded |
 | content_hash | Hash of the generated storage content |
+| total_files | Total number of Markdown files processed in directory mode |
+| succeeded_files | Number of files processed successfully in directory mode |
+| failed_files | Number of files that failed in directory mode |
+| updated_files | Number of files updated in directory mode |
+| attachments_uploaded_total | Total attachments uploaded in directory mode |
+| results_json | JSON array of per-file results in directory mode |
+| failures_json | JSON array of per-file failures in directory mode |
+
+Single-file outputs (`page_url`, `page_id`, `version`, `updated`, `attachments_uploaded`, `content_hash`) are only populated for single-file runs. Directory runs use the aggregate outputs above.
 
 ## Image handling
 - Local images are resolved relative to `attachments_base`.
 - Remote images use `ri:url` when `image_mode=external`.
 - If `download_remote_images=true`, remote images are downloaded and uploaded as attachments.
+- In directory mode without `attachments_base`, local images are resolved relative to each Markdown file.
 
 ## Limitations
 - Confluence Cloud only (no Server or Data Center support).
-- Updates a single page by ID; no multi-page publishing.
+- Each Markdown file maps to a single Confluence page. Directory mode syncs multiple files sequentially.
 - Raw HTML in Markdown is stripped for safety.
 
 ## Versioning
