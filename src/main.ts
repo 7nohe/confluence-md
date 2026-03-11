@@ -4,9 +4,8 @@
 
 import * as fs from 'node:fs';
 import * as core from '@actions/core';
-import { runConversion } from './core';
-import { extractFrontmatter, getPageIdFromFrontmatter } from './frontmatter';
-import { getInputs, validateInputs } from './inputs';
+import { runSourceExecution } from './execution';
+import { getInputs } from './inputs';
 import { createActionsLogger, setLogger } from './logger';
 
 async function run(): Promise<void> {
@@ -19,43 +18,69 @@ async function run(): Promise<void> {
 		const inputs = getInputs();
 
 		// Step 2: Read Markdown file
-		core.info(`Reading Markdown file: ${inputs.source}`);
+		core.info(`Reading Markdown source: ${inputs.source}`);
 		if (!fs.existsSync(inputs.source)) {
-			throw new Error(`Source file not found: ${inputs.source}`);
+			throw new Error(`Source path not found: ${inputs.source}`);
 		}
-		const markdown = fs.readFileSync(inputs.source, 'utf-8');
 
-		// Step 3: Extract frontmatter and get page ID
-		core.info('Extracting frontmatter...');
-		const { data: frontmatter, content: markdownBody } = extractFrontmatter(markdown);
-		const frontmatterPageId = getPageIdFromFrontmatter(frontmatter, inputs.frontmatterPageIdKey);
-		const pageId = validateInputs(inputs, frontmatterPageId);
+		// Step 3: Run conversion and update
+		const execution = await runSourceExecution(inputs);
 
-		// Step 4: Run conversion and update
-		const result = await runConversion({
-			inputs,
-			markdownContent: markdownBody,
-			pageId,
-		});
+		// Step 4: Set outputs
+		if (execution.mode === 'single') {
+			core.setOutput('page_url', execution.result.outputs.pageUrl);
+			core.setOutput('page_id', execution.result.outputs.pageId);
+			core.setOutput('version', execution.result.outputs.version.toString());
+			core.setOutput('updated', execution.result.outputs.updated.toString());
+			core.setOutput(
+				'attachments_uploaded',
+				execution.result.outputs.attachmentsUploaded.toString()
+			);
+			core.setOutput('content_hash', execution.result.outputs.contentHash);
 
-		// Step 5: Set outputs
-		core.setOutput('page_url', result.outputs.pageUrl);
-		core.setOutput('page_id', result.outputs.pageId);
-		core.setOutput('version', result.outputs.version.toString());
-		core.setOutput('updated', result.outputs.updated.toString());
-		core.setOutput('attachments_uploaded', result.outputs.attachmentsUploaded.toString());
-		core.setOutput('content_hash', result.outputs.contentHash);
+			// Summary (only for non-dry-run, as dry-run prints its own summary)
+			if (!inputs.dryRun) {
+				core.info('');
+				core.info('=== Summary ===');
+				core.info(`Page URL: ${execution.result.outputs.pageUrl}`);
+				core.info(`Page ID: ${execution.result.outputs.pageId}`);
+				core.info(`Version: ${execution.result.outputs.version}`);
+				core.info(`Updated: ${execution.result.outputs.updated}`);
+				core.info(`Attachments uploaded: ${execution.result.outputs.attachmentsUploaded}`);
+				core.info(`Content hash: ${execution.result.outputs.contentHash}`);
+			}
+			return;
+		}
 
-		// Summary (only for non-dry-run, as dry-run prints its own summary)
-		if (!inputs.dryRun) {
-			core.info('');
-			core.info('=== Summary ===');
-			core.info(`Page URL: ${result.outputs.pageUrl}`);
-			core.info(`Page ID: ${result.outputs.pageId}`);
-			core.info(`Version: ${result.outputs.version}`);
-			core.info(`Updated: ${result.outputs.updated}`);
-			core.info(`Attachments uploaded: ${result.outputs.attachmentsUploaded}`);
-			core.info(`Content hash: ${result.outputs.contentHash}`);
+		core.setOutput('page_url', '');
+		core.setOutput('page_id', '');
+		core.setOutput('version', '');
+		core.setOutput('updated', '');
+		core.setOutput('attachments_uploaded', '');
+		core.setOutput('content_hash', '');
+		core.setOutput('total_files', execution.result.summary.total.toString());
+		core.setOutput('succeeded_files', execution.result.summary.succeeded.toString());
+		core.setOutput('failed_files', execution.result.summary.failed.toString());
+		core.setOutput('updated_files', execution.result.summary.updated.toString());
+		core.setOutput(
+			'attachments_uploaded_total',
+			execution.result.summary.attachmentsUploaded.toString()
+		);
+		core.setOutput('results_json', JSON.stringify(execution.result.results));
+		core.setOutput('failures_json', JSON.stringify(execution.result.failures));
+
+		core.info('');
+		core.info('=== Summary ===');
+		core.info(`Total files: ${execution.result.summary.total}`);
+		core.info(`Succeeded: ${execution.result.summary.succeeded}`);
+		core.info(`Failed: ${execution.result.summary.failed}`);
+		core.info(`Updated: ${execution.result.summary.updated}`);
+		core.info(`Attachments uploaded: ${execution.result.summary.attachmentsUploaded}`);
+
+		if (execution.result.failures.length > 0) {
+			core.setFailed(
+				`${execution.result.failures.length} file(s) failed during directory synchronization.`
+			);
 		}
 	} catch (error) {
 		if (error instanceof Error) {

@@ -20,7 +20,7 @@ inputs:
     description: 'Confluence API token'
     required: true
   source:
-    description: 'Markdown file path'
+    description: 'Markdown file or directory path'
     required: true
   attachments_base:
     description: 'Base directory for resolving relative image paths (defaults to source directory)'
@@ -70,6 +70,20 @@ outputs:
     description: 'Number of attachments uploaded'
   content_hash:
     description: 'Hash of the generated storage content'
+  total_files:
+    description: 'Total number of Markdown files processed in directory mode'
+  succeeded_files:
+    description: 'Number of files processed successfully in directory mode'
+  failed_files:
+    description: 'Number of files that failed in directory mode'
+  updated_files:
+    description: 'Number of files updated in directory mode'
+  attachments_uploaded_total:
+    description: 'Total number of attachments uploaded in directory mode'
+  results_json:
+    description: 'JSON array of per-file results in directory mode'
+  failures_json:
+    description: 'JSON array of per-file failures in directory mode'
 
 runs:
   using: 'node20'

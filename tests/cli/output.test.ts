@@ -1,6 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { formatError, formatJsonOutput, printSuccessOutput } from '../../src/cli/output';
-import type { ActionOutputs } from '../../src/types';
+import {
+	formatError,
+	formatJsonOutput,
+	formatMultiRunJsonOutput,
+	printMultiRunOutput,
+	printSuccessOutput,
+} from '../../src/cli/output';
+import type { ActionOutputs, MultiRunResult } from '../../src/types';
 
 describe('cli/output.ts', () => {
 	describe('formatJsonOutput', () => {
@@ -113,6 +119,39 @@ describe('cli/output.ts', () => {
 		});
 	});
 
+	describe('formatMultiRunJsonOutput', () => {
+		it('should format multi-run results as JSON', () => {
+			const result: MultiRunResult = {
+				summary: {
+					total: 2,
+					succeeded: 1,
+					failed: 1,
+					updated: 1,
+					attachmentsUploaded: 3,
+				},
+				results: [
+					{
+						source: 'docs/a.md',
+						pageUrl: 'https://example.atlassian.net/wiki/pages/12345',
+						pageId: '12345',
+						version: 2,
+						updated: true,
+						attachmentsUploaded: 3,
+						contentHash: 'abc123',
+					},
+				],
+				failures: [{ source: 'docs/b.md', error: 'Missing frontmatter page ID' }],
+			};
+
+			const parsed = JSON.parse(formatMultiRunJsonOutput(result));
+
+			expect(parsed.mode).toBe('multi');
+			expect(parsed.summary).toEqual(result.summary);
+			expect(parsed.results).toEqual(result.results);
+			expect(parsed.failures).toEqual(result.failures);
+		});
+	});
+
 	describe('printSuccessOutput', () => {
 		let consoleSpy: ReturnType<typeof vi.spyOn>;
 
@@ -164,6 +203,51 @@ describe('cli/output.ts', () => {
 			const allCalls = consoleSpy.mock.calls.flat().join(' ');
 			expect(allCalls).not.toContain('Should not be printed');
 			expect(allCalls).not.toContain('storageContent');
+		});
+	});
+
+	describe('printMultiRunOutput', () => {
+		let consoleSpy: ReturnType<typeof vi.spyOn>;
+
+		beforeEach(() => {
+			consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+		});
+
+		afterEach(() => {
+			consoleSpy.mockRestore();
+		});
+
+		it('should print summary, results, and failures', () => {
+			const result: MultiRunResult = {
+				summary: {
+					total: 2,
+					succeeded: 1,
+					failed: 1,
+					updated: 1,
+					attachmentsUploaded: 2,
+				},
+				results: [
+					{
+						source: 'docs/a.md',
+						pageUrl: 'https://example.atlassian.net/wiki/pages/12345',
+						pageId: '12345',
+						version: 2,
+						updated: true,
+						attachmentsUploaded: 2,
+						contentHash: 'abc123',
+					},
+				],
+				failures: [{ source: 'docs/b.md', error: 'boom' }],
+			};
+
+			printMultiRunOutput(result);
+
+			expect(consoleSpy).toHaveBeenCalledWith('=== Summary ===');
+			expect(consoleSpy).toHaveBeenCalledWith('Total files: 2');
+			expect(consoleSpy).toHaveBeenCalledWith('=== Results ===');
+			expect(consoleSpy).toHaveBeenCalledWith('docs/a.md -> 12345 (updated: true)');
+			expect(consoleSpy).toHaveBeenCalledWith('=== Failures ===');
+			expect(consoleSpy).toHaveBeenCalledWith('docs/b.md: boom');
 		});
 	});
 });

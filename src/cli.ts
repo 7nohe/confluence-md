@@ -9,10 +9,15 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { Command } from 'commander';
 import { loadConfig } from './cli/config';
-import { formatError, formatJsonOutput, printSuccessOutput } from './cli/output';
-import { runConversion } from './core';
-import { extractFrontmatter, getPageIdFromFrontmatter } from './frontmatter';
-import { createInputsFromRaw, validateInputs } from './inputs';
+import {
+	formatError,
+	formatJsonOutput,
+	formatMultiRunJsonOutput,
+	printMultiRunOutput,
+	printSuccessOutput,
+} from './cli/output';
+import { runSourceExecution } from './execution';
+import { createInputsFromRaw } from './inputs';
 import { createConsoleLogger, createSilentLogger, setLogger } from './logger';
 
 /**
@@ -38,8 +43,8 @@ const program = new Command();
 program
 	.name('confluence-md')
 	.description('Convert Markdown (GFM) to Confluence Cloud storage format and update a page')
-	.version('1.0.0')
-	.argument('<source>', 'Markdown file path')
+	.version('0.1.0')
+	.argument('<source>', 'Markdown file or directory path')
 	.option('-u, --url <url>', 'Confluence base URL (or CONFLUENCE_BASE_URL env)')
 	.option('-e, --email <email>', 'Confluence account email (or CONFLUENCE_EMAIL env)')
 	.option('-p, --page-id <id>', 'Confluence page ID (or use frontmatter)')
@@ -88,12 +93,8 @@ async function runCli(source: string, options: CliOptions): Promise<void> {
 		'Use --email flag, CONFLUENCE_EMAIL env, or config file.'
 	);
 
-	// Validate source file exists
-	const sourcePath = validateSourceFile(source);
-
-	// Read and parse markdown
-	const markdown = fs.readFileSync(sourcePath, 'utf-8');
-	const { data: frontmatter, content: markdownBody } = extractFrontmatter(markdown);
+	// Validate source path exists
+	const sourcePath = validateSourcePath(source);
 
 	// Create inputs
 	const inputs = createInputsFromRaw({
@@ -112,23 +113,16 @@ async function runCli(source: string, options: CliOptions): Promise<void> {
 		notifyWatchers: config?.notify_watchers,
 	});
 
-	// Get page ID from frontmatter or inputs
-	const frontmatterPageId = getPageIdFromFrontmatter(frontmatter, inputs.frontmatterPageIdKey);
-	const pageId = validateInputs(inputs, frontmatterPageId);
-
-	// Run conversion
 	if (!options.json) {
 		console.log(`Converting ${source}...`);
 	}
 
-	const result = await runConversion({
-		inputs,
-		markdownContent: markdownBody,
-		pageId,
-	});
+	const execution = await runSourceExecution(inputs);
+	outputResults(execution, options, inputs.dryRun);
 
-	// Output results
-	outputResults(result.outputs, options, inputs.dryRun);
+	if (execution.mode === 'multi' && execution.result.failures.length > 0) {
+		process.exit(1);
+	}
 
 	process.exit(0);
 }
@@ -156,12 +150,12 @@ function requireInput(value: string | undefined, errorName: string, hint: string
 }
 
 /**
- * Validate source file exists and return resolved path
+ * Validate source path exists and return resolved path
  */
-function validateSourceFile(source: string): string {
+function validateSourcePath(source: string): string {
 	const sourcePath = path.resolve(source);
 	if (!fs.existsSync(sourcePath)) {
-		console.error(`Error: Source file not found: ${sourcePath}`);
+		console.error(`Error: Source path not found: ${sourcePath}`);
 		process.exit(1);
 	}
 	return sourcePath;
@@ -171,15 +165,24 @@ function validateSourceFile(source: string): string {
  * Output results based on options
  */
 function outputResults(
-	outputs: Parameters<typeof formatJsonOutput>[0],
+	execution: Awaited<ReturnType<typeof runSourceExecution>>,
 	options: CliOptions,
 	isDryRun: boolean
 ): void {
+	if (execution.mode === 'single') {
+		if (options.json) {
+			console.log(formatJsonOutput(execution.result.outputs));
+		} else if (!isDryRun) {
+			printSuccessOutput(execution.result.outputs);
+		}
+		return;
+	}
+
 	if (options.json) {
-		console.log(formatJsonOutput(outputs));
-	} else if (!isDryRun) {
+		console.log(formatMultiRunJsonOutput(execution.result));
+	} else {
 		// Summary is printed by core.ts for dry-run
-		printSuccessOutput(outputs);
+		printMultiRunOutput(execution.result);
 	}
 }
 

@@ -4,7 +4,8 @@ import type { ActionInputs } from './types';
 
 export function getInputs(): ActionInputs {
 	const source = core.getInput('source', { required: true });
-	const attachmentsBase = core.getInput('attachments_base') || path.dirname(source);
+	const attachmentsBaseInput = core.getInput('attachments_base');
+	const attachmentsBase = attachmentsBaseInput || path.dirname(source);
 	const imageMode = validateImageMode(core.getInput('image_mode') || 'upload');
 
 	const inputs: ActionInputs = {
@@ -14,6 +15,7 @@ export function getInputs(): ActionInputs {
 		apiToken: core.getInput('api_token', { required: true }),
 		source,
 		attachmentsBase,
+		attachmentsBaseProvided: attachmentsBaseInput !== '',
 		titleOverride: core.getInput('title_override') || undefined,
 		frontmatterPageIdKey: core.getInput('frontmatter_page_id_key') || 'confluence_page_id',
 		imageMode,
@@ -42,8 +44,13 @@ function validateImageMode(mode: string): 'upload' | 'external' {
 	return mode;
 }
 
-export function validateInputs(inputs: ActionInputs, pageIdFromFrontmatter?: string): string {
-	const pageId = pageIdFromFrontmatter || inputs.pageId;
+export function validateInputs(
+	inputs: ActionInputs,
+	pageIdFromFrontmatter?: string,
+	options?: { allowInputFallback?: boolean }
+): string {
+	const allowInputFallback = options?.allowInputFallback ?? true;
+	const pageId = pageIdFromFrontmatter || (allowInputFallback ? inputs.pageId : undefined);
 
 	if (!pageId) {
 		throw new Error(
@@ -88,6 +95,7 @@ export function createInputsFromRaw(raw: RawInputs): ActionInputs {
 		apiToken: raw.apiToken,
 		source: raw.source,
 		attachmentsBase: raw.attachmentsBase || path.dirname(raw.source),
+		attachmentsBaseProvided: raw.attachmentsBase !== undefined,
 		titleOverride: raw.titleOverride || undefined,
 		frontmatterPageIdKey: raw.frontmatterPageIdKey || 'confluence_page_id',
 		imageMode,
