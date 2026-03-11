@@ -1,7 +1,11 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { type RunResult, runConversion } from './core';
-import { extractFrontmatter, getPageIdFromFrontmatter } from './frontmatter';
+import {
+	extractFrontmatter,
+	getPageIdFromFrontmatter,
+	getTitleFromFrontmatter,
+} from './frontmatter';
 import { validateInputs } from './inputs';
 import { getLogger } from './logger';
 import type {
@@ -64,7 +68,9 @@ export function resolveMarkdownFiles(sourceDirectory: string): ResolvedSourceFil
 async function runSingleSource(inputs: ActionInputs, sourcePath: string): Promise<RunResult> {
 	const markdown = fs.readFileSync(sourcePath, 'utf-8');
 	const { data: frontmatter, content: markdownBody } = extractFrontmatter(markdown);
-	const resolvedInputs = createInputsForFile(inputs, sourcePath);
+	const resolvedInputs = createInputsForFile(inputs, sourcePath, frontmatter, {
+		allowTitleOverrideInput: true,
+	});
 	const frontmatterPageId = getPageIdFromFrontmatter(
 		frontmatter,
 		resolvedInputs.frontmatterPageIdKey
@@ -129,7 +135,9 @@ async function runSingleSourceForDirectory(
 ): Promise<MultiRunItemResult> {
 	const markdown = fs.readFileSync(file.path, 'utf-8');
 	const { data: frontmatter, content: markdownBody } = extractFrontmatter(markdown);
-	const resolvedInputs = createInputsForFile(inputs, file.path);
+	const resolvedInputs = createInputsForFile(inputs, file.path, frontmatter, {
+		allowTitleOverrideInput: false,
+	});
 	const frontmatterPageId = getPageIdFromFrontmatter(
 		frontmatter,
 		resolvedInputs.frontmatterPageIdKey
@@ -152,14 +160,25 @@ async function runSingleSourceForDirectory(
 	};
 }
 
-function createInputsForFile(inputs: ActionInputs, filePath: string): ActionInputs {
+function createInputsForFile(
+	inputs: ActionInputs,
+	filePath: string,
+	frontmatter: Record<string, unknown>,
+	options: {
+		allowTitleOverrideInput: boolean;
+	}
+): ActionInputs {
+	const frontmatterTitle = getTitleFromFrontmatter(frontmatter);
+
 	return {
 		...inputs,
 		source: filePath,
 		attachmentsBase: inputs.attachmentsBaseProvided
 			? inputs.attachmentsBase
 			: path.dirname(filePath),
-		titleOverride: undefined,
+		titleOverride: options.allowTitleOverrideInput
+			? inputs.titleOverride || frontmatterTitle
+			: frontmatterTitle,
 	};
 }
 

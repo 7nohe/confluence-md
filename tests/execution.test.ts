@@ -104,6 +104,80 @@ describe('execution.ts', () => {
 				inputs: expect.objectContaining({
 					source: filePath,
 					attachmentsBase: path.dirname(filePath),
+					titleOverride: undefined,
+				}),
+				markdownContent: '\n# Test',
+				pageId: '12345',
+			});
+		});
+
+		it('should use frontmatter title for a single markdown file', async () => {
+			const filePath = path.join(process.cwd(), 'docs/page.md');
+			vi.mocked(fs.existsSync).mockReturnValue(true);
+			vi.mocked(fs.statSync).mockReturnValue({
+				isFile: () => true,
+				isDirectory: () => false,
+			} as fs.Stats);
+			vi.mocked(fs.readFileSync).mockReturnValue(
+				'---\nconfluence_page_id: 12345\ntitle: Frontmatter Title\n---\n\n# Test'
+			);
+			vi.mocked(runConversion).mockResolvedValue({
+				outputs: {
+					pageUrl: 'https://example.atlassian.net/wiki/pages/12345',
+					pageId: '12345',
+					version: 1,
+					updated: true,
+					attachmentsUploaded: 0,
+					contentHash: 'abc123',
+				},
+			});
+
+			await runSourceExecution({
+				...baseInputs,
+				source: filePath,
+			});
+
+			expect(runConversion).toHaveBeenCalledWith({
+				inputs: expect.objectContaining({
+					source: filePath,
+					titleOverride: 'Frontmatter Title',
+				}),
+				markdownContent: '\n# Test',
+				pageId: '12345',
+			});
+		});
+
+		it('should prefer explicit titleOverride over frontmatter title for a single file', async () => {
+			const filePath = path.join(process.cwd(), 'docs/page.md');
+			vi.mocked(fs.existsSync).mockReturnValue(true);
+			vi.mocked(fs.statSync).mockReturnValue({
+				isFile: () => true,
+				isDirectory: () => false,
+			} as fs.Stats);
+			vi.mocked(fs.readFileSync).mockReturnValue(
+				'---\nconfluence_page_id: 12345\ntitle: Frontmatter Title\n---\n\n# Test'
+			);
+			vi.mocked(runConversion).mockResolvedValue({
+				outputs: {
+					pageUrl: 'https://example.atlassian.net/wiki/pages/12345',
+					pageId: '12345',
+					version: 1,
+					updated: true,
+					attachmentsUploaded: 0,
+					contentHash: 'abc123',
+				},
+			});
+
+			await runSourceExecution({
+				...baseInputs,
+				source: filePath,
+				titleOverride: 'CLI Title',
+			});
+
+			expect(runConversion).toHaveBeenCalledWith({
+				inputs: expect.objectContaining({
+					source: filePath,
+					titleOverride: 'CLI Title',
 				}),
 				markdownContent: '\n# Test',
 				pageId: '12345',
@@ -190,6 +264,42 @@ describe('execution.ts', () => {
 			});
 		});
 
+		it('should use frontmatter title when processing a directory', async () => {
+			const docsDir = path.join(process.cwd(), 'docs');
+			const aPath = path.join(docsDir, 'a.md');
+
+			vi.mocked(fs.existsSync).mockReturnValue(true);
+			vi.mocked(fs.statSync).mockReturnValue({
+				isFile: () => false,
+				isDirectory: () => true,
+			} as fs.Stats);
+			vi.mocked(fs.readdirSync).mockReturnValue([createFileEntry('a.md')]);
+			vi.mocked(fs.readFileSync).mockReturnValue(
+				'---\nconfluence_page_id: 12345\ntitle: Directory Title\n---\n\n# A'
+			);
+			vi.mocked(runConversion).mockResolvedValue({
+				outputs: {
+					pageUrl: 'https://example.atlassian.net/wiki/pages/12345',
+					pageId: '12345',
+					version: 2,
+					updated: true,
+					attachmentsUploaded: 1,
+					contentHash: 'hash123',
+				},
+			});
+
+			await runSourceExecution(baseInputs);
+
+			expect(runConversion).toHaveBeenCalledWith({
+				inputs: expect.objectContaining({
+					source: aPath,
+					titleOverride: 'Directory Title',
+				}),
+				markdownContent: '\n# A',
+				pageId: '12345',
+			});
+		});
+
 		it('should ignore titleOverride when processing a directory', async () => {
 			const docsDir = path.join(process.cwd(), 'docs');
 			const aPath = path.join(docsDir, 'a.md');
@@ -200,7 +310,9 @@ describe('execution.ts', () => {
 				isDirectory: () => true,
 			} as fs.Stats);
 			vi.mocked(fs.readdirSync).mockReturnValue([createFileEntry('a.md')]);
-			vi.mocked(fs.readFileSync).mockReturnValue('---\nconfluence_page_id: 12345\n---\n\n# A');
+			vi.mocked(fs.readFileSync).mockReturnValue(
+				'---\nconfluence_page_id: 12345\ntitle: Frontmatter Title\n---\n\n# A'
+			);
 			vi.mocked(runConversion).mockResolvedValue({
 				outputs: {
 					pageUrl: 'https://example.atlassian.net/wiki/pages/12345',
@@ -220,7 +332,7 @@ describe('execution.ts', () => {
 			expect(runConversion).toHaveBeenCalledWith({
 				inputs: expect.objectContaining({
 					source: aPath,
-					titleOverride: undefined,
+					titleOverride: 'Frontmatter Title',
 				}),
 				markdownContent: '\n# A',
 				pageId: '12345',
