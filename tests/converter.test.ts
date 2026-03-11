@@ -7,7 +7,11 @@ import {
 	escapeXml,
 	wrapCData,
 } from '../src/converter/xml';
-import { extractFrontmatter, getPageIdFromFrontmatter } from '../src/frontmatter';
+import {
+	extractFrontmatter,
+	getPageIdFromFrontmatter,
+	getTitleFromFrontmatter,
+} from '../src/frontmatter';
 
 describe('XML utilities', () => {
 	describe('escapeXml', () => {
@@ -298,6 +302,29 @@ confluence_page_id: 12345
 		it('should use custom key', () => {
 			const pageId = getPageIdFromFrontmatter({ custom_id: '99999' }, 'custom_id');
 			expect(pageId).toBe('99999');
+		});
+	});
+
+	describe('getTitleFromFrontmatter', () => {
+		it('should get title from frontmatter', () => {
+			const title = getTitleFromFrontmatter({ title: 'Test Title' });
+			expect(title).toBe('Test Title');
+		});
+
+		it('should trim title from frontmatter', () => {
+			const title = getTitleFromFrontmatter({ title: '  Test Title  ' });
+			expect(title).toBe('Test Title');
+		});
+
+		it('should stringify scalar YAML titles', () => {
+			expect(getTitleFromFrontmatter({ title: 2026 })).toBe('2026');
+			expect(getTitleFromFrontmatter({ title: true })).toBe('true');
+		});
+
+		it('should return undefined for missing or empty title', () => {
+			expect(getTitleFromFrontmatter({})).toBeUndefined();
+			expect(getTitleFromFrontmatter({ title: '   ' })).toBeUndefined();
+			expect(getTitleFromFrontmatter({ title: null })).toBeUndefined();
 		});
 	});
 });

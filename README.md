@@ -130,12 +130,15 @@ jobs:
 ```markdown
 ---
 confluence_page_id: 123456
+title: My Confluence Page
 ---
 
 # Page title
 ```
 
 You can also pass `page_id` directly as an input for single-file syncs.
+If frontmatter includes `title`, it is used as the Confluence page title. In single-file mode,
+`title_override` still takes precedence.
 
 ## GitHub Action Inputs
 

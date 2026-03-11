@@ -25,3 +25,16 @@ export function getPageIdFromFrontmatter(
 
 	return pageId;
 }
+
+export function getTitleFromFrontmatter(
+	frontmatter: Record<string, unknown>
+): string | undefined {
+	const value = frontmatter.title;
+
+	if (value === undefined || value === null) {
+		return undefined;
+	}
+
+	const title = String(value).trim();
+	return title === '' ? undefined : title;
+}
