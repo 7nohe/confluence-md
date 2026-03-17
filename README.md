@@ -28,24 +28,24 @@ Install and run with npx:
 export CONFLUENCE_API_TOKEN="your-api-token"
 
 # Basic usage
-npx confluence-md docs/page.md \
+npx @7nohe/confluence-md docs/page.md \
   --url https://example.atlassian.net \
   --email you@example.com
 
 # With page ID specified
-npx confluence-md docs/page.md \
+npx @7nohe/confluence-md docs/page.md \
   --url https://example.atlassian.net \
   --email you@example.com \
   --page-id 123456
 
 # Dry run (preview without updating)
-npx confluence-md docs/page.md --dry-run
+npx @7nohe/confluence-md docs/page.md --dry-run
 
 # JSON output for scripting
-npx confluence-md docs/page.md --json
+npx @7nohe/confluence-md docs/page.md --json
 
 # Directory sync (page IDs must be defined in frontmatter)
-npx confluence-md docs/ \
+npx @7nohe/confluence-md docs/ \
   --url https://example.atlassian.net \
   --email you@example.com
 

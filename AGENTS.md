@@ -4,7 +4,7 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 
 ## Project Overview
 
-A GitHub Action and CLI tool that converts Markdown (GFM) files to Confluence Cloud storage format and updates Confluence pages. Available as both `npx confluence-md` (or `cfmd`) command and GitHub Action. Uses `@actions/http-client` for HTTP operations and `unified`/`remark` for Markdown parsing.
+A GitHub Action and CLI tool that converts Markdown (GFM) files to Confluence Cloud storage format and updates Confluence pages. Available as both `npx @7nohe/confluence-md` (or `cfmd` / `confluence-md`) command and GitHub Action. Uses `@actions/http-client` for HTTP operations and `unified`/`remark` for Markdown parsing.
 
 ## Commands
 
