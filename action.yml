@@ -1,4 +1,4 @@
-name: 'Markdown to Confluence'
+name: 'Confluence MD'
 description: 'Convert Markdown (GFM) to Confluence Cloud storage format and update a page'
 author: '7nohe'
 
