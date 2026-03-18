@@ -1,6 +1,6 @@
 # Markdown to Confluence
 
-[![GitHub Marketplace](https://img.shields.io/badge/Marketplace-Markdown%20to%20Confluence-blue?logo=github)](https://github.com/marketplace/actions/markdown-to-confluence)
+[![GitHub Marketplace](https://img.shields.io/badge/Marketplace-Confluence%20MD-blue?logo=github)](https://github.com/marketplace/actions/confluence-md)
 
 Convert Markdown (GFM) to Confluence Cloud storage format and update an existing page.
 
