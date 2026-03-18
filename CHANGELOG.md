@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and this project adheres to
 Semantic Versioning.
 
+## [0.1.2](https://github.com/7nohe/confluence-md/compare/confluence-md-v0.1.1...confluence-md-v0.1.2) (2026-03-18)
+
+
+### Features
+
+* enable GitHub Action usage via `uses:` and prepare for Marketplace ([fcb86df](https://github.com/7nohe/confluence-md/commit/fcb86df7c824385c3d42e4c64caa7e4547dad74d))
+* enable GitHub Action usage via uses: and Marketplace listing ([9026809](https://github.com/7nohe/confluence-md/commit/902680963021a76385a62b4bc22169eaa92782a3))
+
+
+### Bug Fixes
+
+* rename action to Confluence MD for unique Marketplace slug ([355e028](https://github.com/7nohe/confluence-md/commit/355e0282f1597c1ee237f382a766c96cdfe45139))
+
 ## [0.1.1](https://github.com/7nohe/confluence-md/compare/confluence-md-v0.1.0...confluence-md-v0.1.1) (2026-03-11)
 
 
