@@ -3,7 +3,12 @@
  */
 
 import { getLogger } from '../logger';
-import type { ConfluencePage, ConfluencePageUpdate } from '../types';
+import type {
+	ConfluencePage,
+	ConfluencePageCreate,
+	ConfluencePageUpdate,
+	ConfluenceSpaceResult,
+} from '../types';
 import type { ConfluenceClient } from './client';
 
 /**
@@ -52,6 +57,61 @@ export async function updatePage(
 	getLogger().info(`Page updated successfully. New version: ${updatedPage.version.number}`);
 
 	return updatedPage;
+}
+
+/**
+ * Resolve a space key to a space ID
+ */
+export async function resolveSpaceId(client: ConfluenceClient, spaceKey: string): Promise<string> {
+	getLogger().info(`Resolving space key: ${spaceKey}...`);
+
+	const result = await client.get<ConfluenceSpaceResult>(
+		`/wiki/api/v2/spaces?keys=${encodeURIComponent(spaceKey)}&limit=1`
+	);
+
+	if (!result.results || result.results.length === 0) {
+		throw new Error(`Space not found: ${spaceKey}`);
+	}
+
+	const spaceId = result.results[0].id;
+	getLogger().debug(`Resolved space ${spaceKey} to ID ${spaceId}`);
+
+	return spaceId;
+}
+
+/**
+ * Create a new page in a space
+ */
+export async function createPage(
+	client: ConfluenceClient,
+	title: string,
+	spaceId: string,
+	storage: string,
+	parentPageId?: string
+): Promise<ConfluencePage> {
+	getLogger().info(`Creating page "${title}" in space ${spaceId}...`);
+
+	const createBody: ConfluencePageCreate = {
+		spaceId,
+		status: 'current',
+		title,
+		body: {
+			representation: 'storage',
+			value: storage,
+		},
+	};
+
+	if (parentPageId) {
+		createBody.parentId = parentPageId;
+	}
+
+	const createdPage = await client.post<ConfluencePage>('/wiki/api/v2/pages', createBody);
+
+	getLogger().info(
+		`Page created successfully. ID: ${createdPage.id}, Version: ${createdPage.version.number}`
+	);
+
+	return createdPage;
 }
 
 /**

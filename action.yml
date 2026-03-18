@@ -13,6 +13,16 @@ inputs:
   page_id:
     description: 'Confluence page ID (fallback if frontmatter missing)'
     required: false
+  space_key:
+    description: 'Confluence space key (creates new page if no page_id)'
+    required: false
+  parent_page_id:
+    description: 'Parent page ID for new pages'
+    required: false
+  write_page_id:
+    description: 'Write created page ID back to frontmatter'
+    required: false
+    default: 'false'
   email:
     description: 'Confluence account email'
     required: true
@@ -66,6 +76,8 @@ outputs:
     description: 'New version number of the page'
   updated:
     description: 'Whether the page was actually updated (true/false)'
+  created:
+    description: 'Whether a new page was created (true/false)'
   attachments_uploaded:
     description: 'Number of attachments uploaded'
   content_hash:

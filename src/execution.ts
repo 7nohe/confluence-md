@@ -5,8 +5,9 @@ import {
 	extractFrontmatter,
 	getPageIdFromFrontmatter,
 	getTitleFromFrontmatter,
+	writePageIdToFrontmatter,
 } from './frontmatter';
-import { PageIdNotFoundError, validateInputs } from './inputs';
+import { PageIdNotFoundError, resolvePageTarget } from './inputs';
 import { getLogger } from './logger';
 import type {
 	ActionInputs,
@@ -67,6 +68,7 @@ export function resolveMarkdownFiles(sourceDirectory: string): ResolvedSourceFil
 }
 
 async function runSingleSource(inputs: ActionInputs, sourcePath: string): Promise<RunResult> {
+	const logger = getLogger();
 	const markdown = fs.readFileSync(sourcePath, 'utf-8');
 	const { data: frontmatter, content: markdownBody } = extractFrontmatter(markdown);
 	const resolvedInputs = createInputsForFile(inputs, sourcePath, frontmatter, {
@@ -76,13 +78,27 @@ async function runSingleSource(inputs: ActionInputs, sourcePath: string): Promis
 		frontmatter,
 		resolvedInputs.frontmatterPageIdKey
 	);
-	const pageId = validateInputs(resolvedInputs, frontmatterPageId);
+	const pageTarget = resolvePageTarget(resolvedInputs, frontmatterPageId);
 
-	return runConversion({
+	const result = await runConversion({
 		inputs: resolvedInputs,
 		markdownContent: markdownBody,
-		pageId,
+		frontmatter,
+		pageTarget,
 	});
+
+	// Write page ID back to frontmatter if requested
+	if (result.outputs.created && resolvedInputs.writePageId && !resolvedInputs.dryRun) {
+		logger.info(`Writing page ID ${result.outputs.pageId} back to frontmatter...`);
+		writePageIdToFrontmatter(
+			sourcePath,
+			markdown,
+			result.outputs.pageId,
+			resolvedInputs.frontmatterPageIdKey
+		);
+	}
+
+	return result;
 }
 
 async function runMultipleSources(
@@ -145,6 +161,7 @@ async function runSingleSourceForDirectory(
 	inputs: ActionInputs,
 	file: ResolvedSourceFile
 ): Promise<MultiRunItemResult> {
+	const logger = getLogger();
 	const markdown = fs.readFileSync(file.path, 'utf-8');
 	const { data: frontmatter, content: markdownBody } = extractFrontmatter(markdown);
 	const resolvedInputs = createInputsForFile(inputs, file.path, frontmatter, {
@@ -154,12 +171,28 @@ async function runSingleSourceForDirectory(
 		frontmatter,
 		resolvedInputs.frontmatterPageIdKey
 	);
-	const pageId = validateInputs(resolvedInputs, frontmatterPageId, { allowInputFallback: false });
+	const pageTarget = resolvePageTarget(resolvedInputs, frontmatterPageId, {
+		allowInputFallback: false,
+	});
 	const result = await runConversion({
 		inputs: resolvedInputs,
 		markdownContent: markdownBody,
-		pageId,
+		frontmatter,
+		pageTarget,
 	});
+
+	// Write page ID back to frontmatter if requested (directory mode)
+	if (result.outputs.created && resolvedInputs.writePageId && !resolvedInputs.dryRun) {
+		logger.info(
+			`Writing page ID ${result.outputs.pageId} back to ${file.displayPath} frontmatter...`
+		);
+		writePageIdToFrontmatter(
+			file.path,
+			markdown,
+			result.outputs.pageId,
+			resolvedInputs.frontmatterPageIdKey
+		);
+	}
 
 	return {
 		source: file.displayPath,

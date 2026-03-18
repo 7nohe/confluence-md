@@ -1,6 +1,6 @@
 import * as core from '@actions/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createInputsFromRaw, getInputs, validateInputs } from '../src/inputs';
+import { createInputsFromRaw, getInputs, resolvePageTarget, validateInputs } from '../src/inputs';
 
 vi.mock('@actions/core', () => ({
 	getInput: vi.fn(),
@@ -297,6 +297,67 @@ describe('inputs.ts', () => {
 		});
 	});
 
+	describe('resolvePageTarget', () => {
+		const baseInputs = {
+			confluenceBaseUrl: 'https://example.atlassian.net/wiki',
+			email: 'user@example.com',
+			apiToken: 'token',
+			source: 'test.md',
+			attachmentsBase: '.',
+			frontmatterPageIdKey: 'confluence_page_id',
+			imageMode: 'upload' as const,
+			downloadRemoteImages: false,
+			skipIfUnchanged: false,
+			dryRun: false,
+			notifyWatchers: false,
+			userAgent: 'test',
+		};
+
+		it('should return update mode when pageId is in frontmatter', () => {
+			const result = resolvePageTarget(baseInputs, '67890');
+			expect(result).toEqual({ mode: 'update', pageId: '67890' });
+		});
+
+		it('should return update mode when pageId is in inputs', () => {
+			const result = resolvePageTarget({ ...baseInputs, pageId: '12345' });
+			expect(result).toEqual({ mode: 'update', pageId: '12345' });
+		});
+
+		it('should prefer frontmatter pageId over inputs pageId', () => {
+			const result = resolvePageTarget({ ...baseInputs, pageId: '12345' }, '67890');
+			expect(result).toEqual({ mode: 'update', pageId: '67890' });
+		});
+
+		it('should return create mode when spaceKey is provided and no pageId', () => {
+			const result = resolvePageTarget({ ...baseInputs, spaceKey: 'MYSPACE' });
+			expect(result).toEqual({ mode: 'create', spaceKey: 'MYSPACE', parentPageId: undefined });
+		});
+
+		it('should include parentPageId in create mode', () => {
+			const result = resolvePageTarget({
+				...baseInputs,
+				spaceKey: 'MYSPACE',
+				parentPageId: '11111',
+			});
+			expect(result).toEqual({ mode: 'create', spaceKey: 'MYSPACE', parentPageId: '11111' });
+		});
+
+		it('should prefer update mode when both pageId and spaceKey are provided', () => {
+			const result = resolvePageTarget({
+				...baseInputs,
+				pageId: '12345',
+				spaceKey: 'MYSPACE',
+			});
+			expect(result).toEqual({ mode: 'update', pageId: '12345' });
+		});
+
+		it('should throw error when no pageId and no spaceKey', () => {
+			expect(() => resolvePageTarget(baseInputs)).toThrow(
+				"Page ID not found. Provide 'page_id', frontmatter 'confluence_page_id', or 'space_key' to create a new page."
+			);
+		});
+	});
+
 	describe('validateInputs', () => {
 		it('should return pageId from frontmatter when provided', () => {
 			const inputs = {
@@ -363,7 +424,7 @@ describe('inputs.ts', () => {
 			expect(result).toBe('67890');
 		});
 
-		it('should throw error when no pageId is found', () => {
+		it('should throw error when no pageId is found and no spaceKey', () => {
 			const inputs = {
 				confluenceBaseUrl: 'https://example.atlassian.net/wiki',
 				email: 'user@example.com',
@@ -379,9 +440,7 @@ describe('inputs.ts', () => {
 				userAgent: 'test',
 			};
 
-			expect(() => validateInputs(inputs)).toThrow(
-				"Page ID not found. Please provide it via the 'page_id' input or in frontmatter using the key 'confluence_page_id'."
-			);
+			expect(() => validateInputs(inputs)).toThrow('Page ID not found');
 		});
 
 		it('should ignore input pageId when fallback is disabled', () => {
@@ -402,18 +461,19 @@ describe('inputs.ts', () => {
 			};
 
 			expect(() => validateInputs(inputs, undefined, { allowInputFallback: false })).toThrow(
-				"Page ID not found. Please provide it via the 'page_id' input or in frontmatter using the key 'confluence_page_id'."
+				'Page ID not found'
 			);
 		});
 
-		it('should include custom frontmatter key in error message', () => {
+		it('should throw error when spaceKey provided but no pageId (create mode)', () => {
 			const inputs = {
 				confluenceBaseUrl: 'https://example.atlassian.net/wiki',
 				email: 'user@example.com',
 				apiToken: 'token',
 				source: 'test.md',
 				attachmentsBase: '.',
-				frontmatterPageIdKey: 'custom_page_id',
+				spaceKey: 'MYSPACE',
+				frontmatterPageIdKey: 'confluence_page_id',
 				imageMode: 'upload' as const,
 				downloadRemoteImages: false,
 				skipIfUnchanged: false,
@@ -422,7 +482,7 @@ describe('inputs.ts', () => {
 				userAgent: 'test',
 			};
 
-			expect(() => validateInputs(inputs)).toThrow("'custom_page_id'");
+			expect(() => validateInputs(inputs)).toThrow('Page ID not found');
 		});
 	});
 

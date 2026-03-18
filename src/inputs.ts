@@ -1,6 +1,6 @@
 import * as path from 'node:path';
 import * as core from '@actions/core';
-import type { ActionInputs } from './types';
+import type { ActionInputs, PageTarget } from './types';
 
 export function getInputs(): ActionInputs {
 	const source = core.getInput('source', { required: true });
@@ -11,6 +11,9 @@ export function getInputs(): ActionInputs {
 	const inputs: ActionInputs = {
 		confluenceBaseUrl: normalizeBaseUrl(core.getInput('confluence_base_url', { required: true })),
 		pageId: core.getInput('page_id') || undefined,
+		spaceKey: core.getInput('space_key') || undefined,
+		parentPageId: core.getInput('parent_page_id') || undefined,
+		writePageId: core.getInput('write_page_id') === 'true',
 		email: core.getInput('email', { required: true }),
 		apiToken: core.getInput('api_token', { required: true }),
 		source,
@@ -47,10 +50,26 @@ function validateImageMode(mode: string): 'upload' | 'external' {
 export class PageIdNotFoundError extends Error {
 	constructor(frontmatterKey: string) {
 		super(
-			`Page ID not found. Please provide it via the 'page_id' input or in frontmatter using the key '${frontmatterKey}'.`
+			`Page ID not found. Provide 'page_id', frontmatter '${frontmatterKey}', or 'space_key' to create a new page.`
 		);
 		this.name = 'PageIdNotFoundError';
 	}
+}
+
+export function resolvePageTarget(
+	inputs: ActionInputs,
+	pageIdFromFrontmatter?: string,
+	options?: { allowInputFallback?: boolean }
+): PageTarget {
+	const allowInputFallback = options?.allowInputFallback ?? true;
+	const pageId = pageIdFromFrontmatter || (allowInputFallback ? inputs.pageId : undefined);
+	if (pageId) {
+		return { mode: 'update', pageId };
+	}
+	if (inputs.spaceKey) {
+		return { mode: 'create', spaceKey: inputs.spaceKey, parentPageId: inputs.parentPageId };
+	}
+	throw new PageIdNotFoundError(inputs.frontmatterPageIdKey);
 }
 
 export function validateInputs(
@@ -58,14 +77,11 @@ export function validateInputs(
 	pageIdFromFrontmatter?: string,
 	options?: { allowInputFallback?: boolean }
 ): string {
-	const allowInputFallback = options?.allowInputFallback ?? true;
-	const pageId = pageIdFromFrontmatter || (allowInputFallback ? inputs.pageId : undefined);
-
-	if (!pageId) {
-		throw new PageIdNotFoundError(inputs.frontmatterPageIdKey);
+	const target = resolvePageTarget(inputs, pageIdFromFrontmatter, options);
+	if (target.mode === 'update') {
+		return target.pageId;
 	}
-
-	return pageId;
+	throw new PageIdNotFoundError(inputs.frontmatterPageIdKey);
 }
 
 /**
@@ -78,6 +94,9 @@ export interface RawInputs {
 	apiToken: string;
 	source: string;
 	pageId?: string;
+	spaceKey?: string;
+	parentPageId?: string;
+	writePageId?: boolean;
 	attachmentsBase?: string;
 	titleOverride?: string;
 	frontmatterPageIdKey?: string;
@@ -98,6 +117,9 @@ export function createInputsFromRaw(raw: RawInputs): ActionInputs {
 	return {
 		confluenceBaseUrl: normalizeBaseUrl(raw.confluenceBaseUrl),
 		pageId: raw.pageId || undefined,
+		spaceKey: raw.spaceKey || undefined,
+		parentPageId: raw.parentPageId || undefined,
+		writePageId: raw.writePageId ?? false,
 		email: raw.email,
 		apiToken: raw.apiToken,
 		source: raw.source,

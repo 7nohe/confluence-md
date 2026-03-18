@@ -18,7 +18,7 @@ describe('cli/output.ts', () => {
 				updated: true,
 				attachmentsUploaded: 3,
 				contentHash: 'abc123',
-				storageContent: '<h1>Test</h1>',
+				created: false,
 			};
 
 			const result = formatJsonOutput(outputs);
@@ -29,12 +29,13 @@ describe('cli/output.ts', () => {
 				pageId: '12345',
 				version: 5,
 				updated: true,
+				created: false,
 				attachmentsUploaded: 3,
 				contentHash: 'abc123',
 			});
 		});
 
-		it('should not include storageContent in output', () => {
+		it('should include created in output', () => {
 			const outputs: ActionOutputs = {
 				pageUrl: 'https://example.atlassian.net/wiki/pages/12345',
 				pageId: '12345',
@@ -42,13 +43,13 @@ describe('cli/output.ts', () => {
 				updated: false,
 				attachmentsUploaded: 0,
 				contentHash: 'xyz789',
-				storageContent: '<p>Large content that should not be in JSON</p>',
+				created: false,
 			};
 
 			const result = formatJsonOutput(outputs);
 			const parsed = JSON.parse(result);
 
-			expect(parsed).not.toHaveProperty('storageContent');
+			expect(parsed).toHaveProperty('created', false);
 		});
 
 		it('should format with indentation', () => {
@@ -59,7 +60,7 @@ describe('cli/output.ts', () => {
 				updated: true,
 				attachmentsUploaded: 0,
 				contentHash: 'hash',
-				storageContent: '',
+				created: false,
 			};
 
 			const result = formatJsonOutput(outputs);
@@ -76,7 +77,7 @@ describe('cli/output.ts', () => {
 				updated: false,
 				attachmentsUploaded: 0,
 				contentHash: '',
-				storageContent: '',
+				created: false,
 			};
 
 			const result = formatJsonOutput(outputs);
@@ -173,7 +174,7 @@ describe('cli/output.ts', () => {
 				updated: true,
 				attachmentsUploaded: 5,
 				contentHash: 'hash123',
-				storageContent: '<h1>Content</h1>',
+				created: false,
 			};
 
 			printSuccessOutput(outputs);
@@ -186,10 +187,11 @@ describe('cli/output.ts', () => {
 			expect(consoleSpy).toHaveBeenCalledWith('Page ID: 12345');
 			expect(consoleSpy).toHaveBeenCalledWith('Version: 10');
 			expect(consoleSpy).toHaveBeenCalledWith('Updated: true');
+			expect(consoleSpy).toHaveBeenCalledWith('Created: false');
 			expect(consoleSpy).toHaveBeenCalledWith('Attachments uploaded: 5');
 		});
 
-		it('should not print storageContent', () => {
+		it('should print created field', () => {
 			const outputs: ActionOutputs = {
 				pageUrl: 'https://example.atlassian.net/wiki/pages/1',
 				pageId: '1',
@@ -197,14 +199,12 @@ describe('cli/output.ts', () => {
 				updated: false,
 				attachmentsUploaded: 0,
 				contentHash: 'hash',
-				storageContent: '<p>Should not be printed</p>',
+				created: false,
 			};
 
 			printSuccessOutput(outputs);
 
-			const allCalls = consoleSpy.mock.calls.flat().join(' ');
-			expect(allCalls).not.toContain('Should not be printed');
-			expect(allCalls).not.toContain('storageContent');
+			expect(consoleSpy).toHaveBeenCalledWith('Created: false');
 		});
 	});
 

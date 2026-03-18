@@ -27,6 +27,9 @@ interface CliOptions {
 	url?: string;
 	email?: string;
 	pageId?: string;
+	spaceKey?: string;
+	parentPageId?: string;
+	writePageId?: boolean;
 	title?: string;
 	attachmentsBase?: string;
 	imageMode?: string;
@@ -48,6 +51,9 @@ program
 	.option('-u, --url <url>', 'Confluence base URL (or CONFLUENCE_BASE_URL env)')
 	.option('-e, --email <email>', 'Confluence account email (or CONFLUENCE_EMAIL env)')
 	.option('-p, --page-id <id>', 'Confluence page ID (or use frontmatter)')
+	.option('-s, --space-key <key>', 'Confluence space key (creates new page if no page_id)')
+	.option('--parent-page-id <id>', 'Parent page ID for new pages')
+	.option('--write-page-id', 'Write created page ID back to frontmatter')
 	.option('--title <title>', 'Override page title')
 	.option('--attachments-base <path>', 'Base directory for resolving image paths')
 	.option('--image-mode <mode>', 'Image handling: upload or external', 'upload')
@@ -103,6 +109,9 @@ async function runCli(source: string, options: CliOptions): Promise<void> {
 		email,
 		apiToken,
 		pageId: options.pageId || config?.page_id,
+		spaceKey: options.spaceKey || config?.space_key,
+		parentPageId: options.parentPageId || config?.parent_page_id,
+		writePageId: options.writePageId ?? config?.write_page_id,
 		attachmentsBase: options.attachmentsBase || config?.attachments_base,
 		titleOverride: options.title || config?.title_override,
 		frontmatterPageIdKey: config?.frontmatter_page_id_key,
