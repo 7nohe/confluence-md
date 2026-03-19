@@ -230,7 +230,8 @@ describe('execution.ts', () => {
 			expect(result.result.summary).toEqual({
 				total: 2,
 				succeeded: 1,
-				failed: 1,
+				failed: 0,
+				skipped: 1,
 				updated: 1,
 				attachmentsUploaded: 1,
 			});
@@ -245,10 +246,11 @@ describe('execution.ts', () => {
 					contentHash: 'hash123',
 				},
 			]);
-			expect(result.result.failures).toEqual([
+			expect(result.result.failures).toEqual([]);
+			expect(result.result.skipped).toEqual([
 				{
 					source: 'docs/b.md',
-					error:
+					reason:
 						"Page ID not found. Please provide it via the 'page_id' input or in frontmatter using the key 'confluence_page_id'.",
 				},
 			]);

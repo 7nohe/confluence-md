@@ -29,6 +29,7 @@ export function formatMultiRunJsonOutput(result: MultiRunResult): string {
 			summary: result.summary,
 			results: result.results,
 			failures: result.failures,
+			skipped: result.skipped,
 		},
 		null,
 		2
@@ -54,6 +55,7 @@ export function printMultiRunOutput(result: MultiRunResult): void {
 	console.log(`Total files: ${result.summary.total}`);
 	console.log(`Succeeded: ${result.summary.succeeded}`);
 	console.log(`Failed: ${result.summary.failed}`);
+	console.log(`Skipped: ${result.summary.skipped}`);
 	console.log(`Updated: ${result.summary.updated}`);
 	console.log(`Attachments uploaded: ${result.summary.attachmentsUploaded}`);
 
@@ -62,6 +64,14 @@ export function printMultiRunOutput(result: MultiRunResult): void {
 		console.log('=== Results ===');
 		for (const item of result.results) {
 			console.log(`${item.source} -> ${item.pageId} (updated: ${item.updated})`);
+		}
+	}
+
+	if (result.skipped.length > 0) {
+		console.log('');
+		console.log('=== Skipped ===');
+		for (const item of result.skipped) {
+			console.log(`${item.source}: ${item.reason}`);
 		}
 	}
 

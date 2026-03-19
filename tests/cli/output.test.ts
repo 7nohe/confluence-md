@@ -126,6 +126,7 @@ describe('cli/output.ts', () => {
 					total: 2,
 					succeeded: 1,
 					failed: 1,
+					skipped: 0,
 					updated: 1,
 					attachmentsUploaded: 3,
 				},
@@ -141,6 +142,7 @@ describe('cli/output.ts', () => {
 					},
 				],
 				failures: [{ source: 'docs/b.md', error: 'Missing frontmatter page ID' }],
+				skipped: [],
 			};
 
 			const parsed = JSON.parse(formatMultiRunJsonOutput(result));
@@ -223,6 +225,7 @@ describe('cli/output.ts', () => {
 					total: 2,
 					succeeded: 1,
 					failed: 1,
+					skipped: 0,
 					updated: 1,
 					attachmentsUploaded: 2,
 				},
@@ -238,6 +241,7 @@ describe('cli/output.ts', () => {
 					},
 				],
 				failures: [{ source: 'docs/b.md', error: 'boom' }],
+				skipped: [],
 			};
 
 			printMultiRunOutput(result);

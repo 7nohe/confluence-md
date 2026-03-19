@@ -121,10 +121,16 @@ export interface MultiRunFailure {
 	error: string;
 }
 
+export interface MultiRunSkipped {
+	source: string;
+	reason: string;
+}
+
 export interface MultiRunSummary {
 	total: number;
 	succeeded: number;
 	failed: number;
+	skipped: number;
 	updated: number;
 	attachmentsUploaded: number;
 }
@@ -133,4 +139,5 @@ export interface MultiRunResult {
 	summary: MultiRunSummary;
 	results: MultiRunItemResult[];
 	failures: MultiRunFailure[];
+	skipped: MultiRunSkipped[];
 }
