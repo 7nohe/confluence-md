@@ -84,6 +84,10 @@ outputs:
     description: 'JSON array of per-file results in directory mode'
   failures_json:
     description: 'JSON array of per-file failures in directory mode'
+  skipped_files:
+    description: 'Number of files skipped (no page ID) in directory mode'
+  skipped_json:
+    description: 'JSON array of per-file skipped entries in directory mode'
 
 runs:
   using: 'node20'

@@ -6,13 +6,14 @@ import {
 	getPageIdFromFrontmatter,
 	getTitleFromFrontmatter,
 } from './frontmatter';
-import { validateInputs } from './inputs';
+import { PageIdNotFoundError, validateInputs } from './inputs';
 import { getLogger } from './logger';
 import type {
 	ActionInputs,
 	MultiRunFailure,
 	MultiRunItemResult,
 	MultiRunResult,
+	MultiRunSkipped,
 	ResolvedSourceFile,
 } from './types';
 
@@ -91,6 +92,7 @@ async function runMultipleSources(
 	const logger = getLogger();
 	const results: MultiRunItemResult[] = [];
 	const failures: MultiRunFailure[] = [];
+	const skipped: MultiRunSkipped[] = [];
 
 	if (inputs.pageId) {
 		logger.warning('Ignoring page_id input because source is a directory.');
@@ -107,12 +109,20 @@ async function runMultipleSources(
 			const result = await runSingleSourceForDirectory(inputs, file);
 			results.push(result);
 		} catch (error) {
-			const message = error instanceof Error ? error.message : 'Unknown error';
-			failures.push({
-				source: file.displayPath,
-				error: message,
-			});
-			logger.error(`${file.displayPath}: ${message}`);
+			if (error instanceof PageIdNotFoundError) {
+				skipped.push({
+					source: file.displayPath,
+					reason: error.message,
+				});
+				logger.warning(`Skipped ${file.displayPath}: ${error.message}`);
+			} else {
+				const message = error instanceof Error ? error.message : 'Unknown error';
+				failures.push({
+					source: file.displayPath,
+					error: message,
+				});
+				logger.error(`${file.displayPath}: ${message}`);
+			}
 		}
 	}
 
@@ -121,11 +131,13 @@ async function runMultipleSources(
 			total: files.length,
 			succeeded: results.length,
 			failed: failures.length,
+			skipped: skipped.length,
 			updated: results.filter((item) => item.updated).length,
 			attachmentsUploaded: results.reduce((sum, item) => sum + item.attachmentsUploaded, 0),
 		},
 		results,
 		failures,
+		skipped,
 	};
 }
 

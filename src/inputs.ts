@@ -44,6 +44,15 @@ function validateImageMode(mode: string): 'upload' | 'external' {
 	return mode;
 }
 
+export class PageIdNotFoundError extends Error {
+	constructor(frontmatterKey: string) {
+		super(
+			`Page ID not found. Please provide it via the 'page_id' input or in frontmatter using the key '${frontmatterKey}'.`
+		);
+		this.name = 'PageIdNotFoundError';
+	}
+}
+
 export function validateInputs(
 	inputs: ActionInputs,
 	pageIdFromFrontmatter?: string,
@@ -53,9 +62,7 @@ export function validateInputs(
 	const pageId = pageIdFromFrontmatter || (allowInputFallback ? inputs.pageId : undefined);
 
 	if (!pageId) {
-		throw new Error(
-			`Page ID not found. Please provide it via the 'page_id' input or in frontmatter using the key '${inputs.frontmatterPageIdKey}'.`
-		);
+		throw new PageIdNotFoundError(inputs.frontmatterPageIdKey);
 	}
 
 	return pageId;

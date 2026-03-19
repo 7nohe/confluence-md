@@ -68,12 +68,15 @@ async function run(): Promise<void> {
 		);
 		core.setOutput('results_json', JSON.stringify(execution.result.results));
 		core.setOutput('failures_json', JSON.stringify(execution.result.failures));
+		core.setOutput('skipped_files', execution.result.summary.skipped.toString());
+		core.setOutput('skipped_json', JSON.stringify(execution.result.skipped));
 
 		core.info('');
 		core.info('=== Summary ===');
 		core.info(`Total files: ${execution.result.summary.total}`);
 		core.info(`Succeeded: ${execution.result.summary.succeeded}`);
 		core.info(`Failed: ${execution.result.summary.failed}`);
+		core.info(`Skipped: ${execution.result.summary.skipped}`);
 		core.info(`Updated: ${execution.result.summary.updated}`);
 		core.info(`Attachments uploaded: ${execution.result.summary.attachmentsUploaded}`);
 
