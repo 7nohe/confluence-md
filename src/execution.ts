@@ -68,7 +68,6 @@ export function resolveMarkdownFiles(sourceDirectory: string): ResolvedSourceFil
 }
 
 async function runSingleSource(inputs: ActionInputs, sourcePath: string): Promise<RunResult> {
-	const logger = getLogger();
 	const markdown = fs.readFileSync(sourcePath, 'utf-8');
 	const { data: frontmatter, content: markdownBody } = extractFrontmatter(markdown);
 	const resolvedInputs = createInputsForFile(inputs, sourcePath, frontmatter, {
@@ -87,17 +86,7 @@ async function runSingleSource(inputs: ActionInputs, sourcePath: string): Promis
 		pageTarget,
 	});
 
-	// Write page ID back to frontmatter if requested
-	if (result.outputs.created && resolvedInputs.writePageId && !resolvedInputs.dryRun) {
-		logger.info(`Writing page ID ${result.outputs.pageId} back to frontmatter...`);
-		writePageIdToFrontmatter(
-			sourcePath,
-			markdown,
-			result.outputs.pageId,
-			resolvedInputs.frontmatterPageIdKey
-		);
-	}
-
+	maybeWriteBackPageId(result, resolvedInputs, sourcePath, markdown);
 	return result;
 }
 
@@ -161,7 +150,6 @@ async function runSingleSourceForDirectory(
 	inputs: ActionInputs,
 	file: ResolvedSourceFile
 ): Promise<MultiRunItemResult> {
-	const logger = getLogger();
 	const markdown = fs.readFileSync(file.path, 'utf-8');
 	const { data: frontmatter, content: markdownBody } = extractFrontmatter(markdown);
 	const resolvedInputs = createInputsForFile(inputs, file.path, frontmatter, {
@@ -181,18 +169,7 @@ async function runSingleSourceForDirectory(
 		pageTarget,
 	});
 
-	// Write page ID back to frontmatter if requested (directory mode)
-	if (result.outputs.created && resolvedInputs.writePageId && !resolvedInputs.dryRun) {
-		logger.info(
-			`Writing page ID ${result.outputs.pageId} back to ${file.displayPath} frontmatter...`
-		);
-		writePageIdToFrontmatter(
-			file.path,
-			markdown,
-			result.outputs.pageId,
-			resolvedInputs.frontmatterPageIdKey
-		);
-	}
+	maybeWriteBackPageId(result, resolvedInputs, file.path, markdown, file.displayPath);
 
 	return {
 		source: file.displayPath,
@@ -203,6 +180,20 @@ async function runSingleSourceForDirectory(
 		attachmentsUploaded: result.outputs.attachmentsUploaded,
 		contentHash: result.outputs.contentHash,
 	};
+}
+
+function maybeWriteBackPageId(
+	result: RunResult,
+	inputs: ActionInputs,
+	filePath: string,
+	markdown: string,
+	displayPath?: string
+): void {
+	if (!result.outputs.created || !inputs.writePageId || inputs.dryRun) return;
+	const logger = getLogger();
+	const label = displayPath ? `${displayPath} frontmatter` : 'frontmatter';
+	logger.info(`Writing page ID ${result.outputs.pageId} back to ${label}...`);
+	writePageIdToFrontmatter(filePath, markdown, result.outputs.pageId, inputs.frontmatterPageIdKey);
 }
 
 function createInputsForFile(

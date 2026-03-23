@@ -26,8 +26,15 @@ export interface RunResult {
 	imagesCount?: number;
 }
 
+interface ConversionContext {
+	client: ConfluenceClient;
+	inputs: ActionInputs;
+	storage: string;
+	images: ImageReference[];
+	contentHash: string;
+}
+
 /**
- * Resolve the title for a page.
  * Priority: titleOverride > frontmatter title > first H1 > filename (without extension)
  */
 function resolveTitle(
@@ -46,8 +53,21 @@ function resolveTitle(
 	if (h1Title) {
 		return h1Title;
 	}
-	// Fallback: filename without extension
 	return path.basename(inputs.source, path.extname(inputs.source));
+}
+
+async function uploadImagesIfAny(
+	client: ConfluenceClient,
+	pageId: string,
+	images: ImageReference[],
+	attachmentsBase: string
+): Promise<number> {
+	if (images.length === 0) return 0;
+	const logger = getLogger();
+	logger.info(`Uploading ${images.length} image(s)...`);
+	const count = await uploadAttachments(client, pageId, images, attachmentsBase);
+	logger.info(`Uploaded ${count} attachment(s).`);
+	return count;
 }
 
 /**
@@ -63,7 +83,6 @@ export async function runConversion(options: RunOptions): Promise<RunResult> {
 		logger.info(`Target space: ${pageTarget.spaceKey} (create mode)`);
 	}
 
-	// Step 1: Convert Markdown to Confluence storage format
 	logger.info('Converting Markdown to Confluence storage format...');
 	const { storage, images } = convertMarkdown(markdownContent, {
 		attachmentsBase: inputs.attachmentsBase,
@@ -71,11 +90,9 @@ export async function runConversion(options: RunOptions): Promise<RunResult> {
 		downloadRemoteImages: inputs.downloadRemoteImages,
 	});
 
-	// Compute content hash
 	const contentHash = crypto.createHash('sha256').update(storage).digest('hex').substring(0, 16);
 	logger.info(`Content hash: ${contentHash}`);
 
-	// Step 2: Handle dry run mode
 	if (inputs.dryRun) {
 		logger.info('Dry run mode - skipping API calls.');
 		logger.info('Generated storage format:');
@@ -111,7 +128,6 @@ export async function runConversion(options: RunOptions): Promise<RunResult> {
 		};
 	}
 
-	// Step 3: Create Confluence client
 	const client = new ConfluenceClient({
 		baseUrl: inputs.confluenceBaseUrl,
 		email: inputs.email,
@@ -119,62 +135,38 @@ export async function runConversion(options: RunOptions): Promise<RunResult> {
 		userAgent: inputs.userAgent,
 	});
 
+	const ctx: ConversionContext = { client, inputs, storage, images, contentHash };
+
 	if (pageTarget.mode === 'create') {
-		return runCreateMode(
-			client,
-			inputs,
-			frontmatter,
-			markdownContent,
-			storage,
-			images,
-			contentHash,
-			pageTarget
-		);
+		return runCreateMode(ctx, frontmatter, markdownContent, pageTarget);
 	}
 
-	return runUpdateMode(client, inputs, storage, images, contentHash, pageTarget.pageId);
+	return runUpdateMode(ctx, pageTarget.pageId);
 }
 
 async function runCreateMode(
-	client: ConfluenceClient,
-	inputs: ActionInputs,
+	ctx: ConversionContext,
 	frontmatter: Record<string, unknown>,
 	markdownContent: string,
-	storage: string,
-	images: ImageReference[],
-	contentHash: string,
 	pageTarget: { mode: 'create'; spaceKey: string; parentPageId?: string }
 ): Promise<RunResult> {
 	const logger = getLogger();
+	const { client, inputs, storage, images, contentHash } = ctx;
 
-	// Resolve title
 	const title = resolveTitle(inputs, frontmatter, markdownContent);
 	logger.info(`Page title: ${title}`);
 
-	// Resolve space ID
 	const spaceId = await resolveSpaceId(client, pageTarget.spaceKey);
-
-	// Create the page
 	const createdPage = await createPage(client, title, spaceId, storage, pageTarget.parentPageId);
-
-	// Upload attachments if any
-	let attachmentsUploaded = 0;
-	if (images.length > 0) {
-		logger.info(`Uploading ${images.length} image(s)...`);
-		attachmentsUploaded = await uploadAttachments(
-			client,
-			createdPage.id,
-			images,
-			inputs.attachmentsBase
-		);
-		logger.info(`Uploaded ${attachmentsUploaded} attachment(s).`);
-	}
-
-	// Build outputs
-	const pageUrl = buildPageUrl(inputs.confluenceBaseUrl, createdPage);
+	const attachmentsUploaded = await uploadImagesIfAny(
+		client,
+		createdPage.id,
+		images,
+		inputs.attachmentsBase
+	);
 
 	const outputs: ActionOutputs = {
-		pageUrl,
+		pageUrl: buildPageUrl(inputs.confluenceBaseUrl, createdPage),
 		pageId: createdPage.id,
 		version: createdPage.version.number,
 		updated: false,
@@ -183,30 +175,19 @@ async function runCreateMode(
 		contentHash,
 	};
 
-	return {
-		outputs,
-		imagesCount: images.length,
-	};
+	return { outputs, imagesCount: images.length };
 }
 
-async function runUpdateMode(
-	client: ConfluenceClient,
-	inputs: ActionInputs,
-	storage: string,
-	images: ImageReference[],
-	contentHash: string,
-	pageId: string
-): Promise<RunResult> {
+async function runUpdateMode(ctx: ConversionContext, pageId: string): Promise<RunResult> {
 	const logger = getLogger();
+	const { client, inputs, storage, images, contentHash } = ctx;
 
-	// Fetch current page
 	logger.info('Fetching current page...');
 	const currentPage = await getPage(client, pageId);
 	const currentVersion = currentPage.version.number;
 	const title = inputs.titleOverride || currentPage.title;
 	const titleChanged = title !== currentPage.title;
 
-	// Check if update is needed
 	let updated = false;
 	let attachmentsUploaded = 0;
 
@@ -222,19 +203,11 @@ async function runUpdateMode(
 	}
 
 	if (updated) {
-		// Upload attachments
-		if (images.length > 0) {
-			logger.info(`Uploading ${images.length} image(s)...`);
-			attachmentsUploaded = await uploadAttachments(client, pageId, images, inputs.attachmentsBase);
-			logger.info(`Uploaded ${attachmentsUploaded} attachment(s).`);
-		}
-
-		// Update page
+		attachmentsUploaded = await uploadImagesIfAny(client, pageId, images, inputs.attachmentsBase);
 		const versionMessage = `Updated by confluence-md (hash: ${contentHash})`;
 		await updatePage(client, pageId, title, storage, currentVersion, versionMessage);
 	}
 
-	// Build outputs
 	const pageUrl = buildPageUrl(inputs.confluenceBaseUrl, currentPage);
 	const finalVersion = updated ? currentVersion + 1 : currentVersion;
 
@@ -248,8 +221,5 @@ async function runUpdateMode(
 		contentHash,
 	};
 
-	return {
-		outputs,
-		imagesCount: images.length,
-	};
+	return { outputs, imagesCount: images.length };
 }
