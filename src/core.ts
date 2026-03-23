@@ -11,7 +11,7 @@ import { buildPageUrl, createPage, getPage, resolveSpaceId, updatePage } from '.
 import { convertMarkdown } from './converter';
 import { extractFirstH1, getTitleFromFrontmatter } from './frontmatter';
 import { getLogger } from './logger';
-import type { ActionInputs, ActionOutputs, PageTarget } from './types';
+import type { ActionInputs, ActionOutputs, ImageReference, PageTarget } from './types';
 
 export interface RunOptions {
 	inputs: ActionInputs;
@@ -141,13 +141,7 @@ async function runCreateMode(
 	frontmatter: Record<string, unknown>,
 	markdownContent: string,
 	storage: string,
-	images: {
-		src: string;
-		alt?: string;
-		title?: string;
-		isRemote: boolean;
-		attachmentFilename?: string;
-	}[],
+	images: ImageReference[],
 	contentHash: string,
 	pageTarget: { mode: 'create'; spaceKey: string; parentPageId?: string }
 ): Promise<RunResult> {
@@ -199,13 +193,7 @@ async function runUpdateMode(
 	client: ConfluenceClient,
 	inputs: ActionInputs,
 	storage: string,
-	images: {
-		src: string;
-		alt?: string;
-		title?: string;
-		isRemote: boolean;
-		attachmentFilename?: string;
-	}[],
+	images: ImageReference[],
 	contentHash: string,
 	pageId: string
 ): Promise<RunResult> {

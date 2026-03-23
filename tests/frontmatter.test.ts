@@ -68,6 +68,11 @@ describe('frontmatter utilities', () => {
 		it('should not match H2 or deeper', () => {
 			expect(extractFirstH1('## H2\n### H3')).toBeUndefined();
 		});
+
+		it('should strip trailing # characters', () => {
+			expect(extractFirstH1('# Hello World #')).toBe('Hello World');
+			expect(extractFirstH1('# Title ###')).toBe('Title');
+		});
 	});
 
 	describe('writePageIdToFrontmatter', () => {

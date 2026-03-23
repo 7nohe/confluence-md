@@ -72,18 +72,6 @@ export function resolvePageTarget(
 	throw new PageIdNotFoundError(inputs.frontmatterPageIdKey);
 }
 
-export function validateInputs(
-	inputs: ActionInputs,
-	pageIdFromFrontmatter?: string,
-	options?: { allowInputFallback?: boolean }
-): string {
-	const target = resolvePageTarget(inputs, pageIdFromFrontmatter, options);
-	if (target.mode === 'update') {
-		return target.pageId;
-	}
-	throw new PageIdNotFoundError(inputs.frontmatterPageIdKey);
-}
-
 /**
  * Raw inputs from CLI or config file
  * Used to create ActionInputs without @actions/core dependency

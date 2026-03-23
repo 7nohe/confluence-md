@@ -40,7 +40,9 @@ export function getTitleFromFrontmatter(frontmatter: Record<string, unknown>): s
 
 export function extractFirstH1(markdownBody: string): string | undefined {
 	const match = markdownBody.match(/^#\s+(.+)$/m);
-	return match ? match[1].trim() : undefined;
+	if (!match) return undefined;
+	// Remove optional trailing # characters (ATX heading closing)
+	return match[1].replace(/\s+#+\s*$/, '').trim();
 }
 
 export function writePageIdToFrontmatter(
