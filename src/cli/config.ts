@@ -23,6 +23,7 @@ export interface ConfigFile {
 	download_remote_images?: boolean;
 	skip_if_unchanged?: boolean;
 	dry_run?: boolean;
+	exclude?: string[];
 	notify_watchers?: boolean;
 }
 

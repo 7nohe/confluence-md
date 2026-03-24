@@ -41,6 +41,7 @@ describe('execution.ts', () => {
 		downloadRemoteImages: false,
 		skipIfUnchanged: true,
 		dryRun: false,
+		exclude: [],
 		notifyWatchers: false,
 		userAgent: 'test-agent',
 	};
@@ -71,6 +72,55 @@ describe('execution.ts', () => {
 				{ path: path.join(docsDir, 'b.md'), displayPath: 'docs/b.md' },
 				{ path: path.join(guideDir, 'nested.md'), displayPath: 'docs/guide/nested.md' },
 			]);
+		});
+
+		it('should exclude files matching glob patterns', () => {
+			const docsDir = path.join(process.cwd(), 'docs');
+			const guideDir = path.join(docsDir, 'guide');
+
+			vi.mocked(fs.readdirSync).mockImplementation((dirPath) => {
+				if (dirPath === docsDir) {
+					return [
+						createFileEntry('README.md'),
+						createFileEntry('page.md'),
+						createDirectoryEntry('guide'),
+					];
+				}
+				if (dirPath === guideDir) {
+					return [createFileEntry('nested.md')];
+				}
+				return [];
+			});
+
+			const files = resolveMarkdownFiles(docsDir, ['**/README.md']);
+
+			expect(files.map((f) => f.displayPath)).toEqual([
+				'docs/guide/nested.md',
+				'docs/page.md',
+			]);
+		});
+
+		it('should support multiple exclude patterns', () => {
+			const docsDir = path.join(process.cwd(), 'docs');
+			const draftDir = path.join(docsDir, 'draft');
+
+			vi.mocked(fs.readdirSync).mockImplementation((dirPath) => {
+				if (dirPath === docsDir) {
+					return [
+						createFileEntry('README.md'),
+						createFileEntry('page.md'),
+						createDirectoryEntry('draft'),
+					];
+				}
+				if (dirPath === draftDir) {
+					return [createFileEntry('wip.md')];
+				}
+				return [];
+			});
+
+			const files = resolveMarkdownFiles(docsDir, ['**/README.md', 'draft/**']);
+
+			expect(files.map((f) => f.displayPath)).toEqual(['docs/page.md']);
 		});
 	});
 

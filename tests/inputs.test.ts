@@ -1,6 +1,11 @@
 import * as core from '@actions/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createInputsFromRaw, getInputs, resolvePageTarget } from '../src/inputs';
+import {
+	createInputsFromRaw,
+	getInputs,
+	parseExcludePatterns,
+	resolvePageTarget,
+} from '../src/inputs';
 
 vi.mock('@actions/core', () => ({
 	getInput: vi.fn(),
@@ -358,6 +363,33 @@ describe('inputs.ts', () => {
 		});
 	});
 
+	describe('parseExcludePatterns', () => {
+		it('should return empty array for empty string', () => {
+			expect(parseExcludePatterns('')).toEqual([]);
+			expect(parseExcludePatterns('  ')).toEqual([]);
+		});
+
+		it('should split comma-separated patterns', () => {
+			expect(parseExcludePatterns('**/README.md,docs/draft/**')).toEqual([
+				'**/README.md',
+				'docs/draft/**',
+			]);
+		});
+
+		it('should split newline-separated patterns', () => {
+			expect(parseExcludePatterns('**/README.md\ndocs/draft/**')).toEqual([
+				'**/README.md',
+				'docs/draft/**',
+			]);
+		});
+
+		it('should trim whitespace and skip empty entries', () => {
+			expect(parseExcludePatterns(' **/README.md , , docs/draft/** ')).toEqual([
+				'**/README.md',
+				'docs/draft/**',
+			]);
+		});
+	});
 
 	describe('createInputsFromRaw', () => {
 		it('should create valid inputs from raw CLI values', () => {

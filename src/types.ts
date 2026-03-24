@@ -15,6 +15,7 @@ export interface ActionInputs {
 	downloadRemoteImages: boolean;
 	skipIfUnchanged: boolean;
 	dryRun: boolean;
+	exclude: string[];
 	notifyWatchers: boolean;
 	userAgent: string;
 }

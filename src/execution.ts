@@ -1,5 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { minimatch } from 'minimatch';
 import { type RunResult, runConversion } from './core';
 import {
 	extractFrontmatter,
@@ -48,7 +49,7 @@ export async function runSourceExecution(inputs: ActionInputs): Promise<SourceEx
 		throw new Error(`Source path must be a Markdown file or directory: ${sourcePath}`);
 	}
 
-	const files = resolveMarkdownFiles(sourcePath);
+	const files = resolveMarkdownFiles(sourcePath, inputs.exclude);
 	if (files.length === 0) {
 		throw new Error(`No Markdown files found in directory: ${sourcePath}`);
 	}
@@ -59,12 +60,23 @@ export async function runSourceExecution(inputs: ActionInputs): Promise<SourceEx
 	};
 }
 
-export function resolveMarkdownFiles(sourceDirectory: string): ResolvedSourceFile[] {
+export function resolveMarkdownFiles(
+	sourceDirectory: string,
+	exclude: string[] = []
+): ResolvedSourceFile[] {
 	const root = path.resolve(sourceDirectory);
 	const files = collectMarkdownFiles(root, root);
 
-	files.sort((a, b) => a.displayPath.localeCompare(b.displayPath));
-	return files;
+	const filtered =
+		exclude.length > 0
+			? files.filter((f) => {
+					const relativePath = path.relative(root, f.path);
+					return !exclude.some((pattern) => minimatch(relativePath, pattern, { dot: true }));
+				})
+			: files;
+
+	filtered.sort((a, b) => a.displayPath.localeCompare(b.displayPath));
+	return filtered;
 }
 
 async function runSingleSource(inputs: ActionInputs, sourcePath: string): Promise<RunResult> {

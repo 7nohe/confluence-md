@@ -36,6 +36,7 @@ interface CliOptions {
 	downloadRemoteImages?: boolean;
 	skipUnchanged?: boolean;
 	dryRun?: boolean;
+	exclude?: string;
 	json?: boolean;
 	verbose?: boolean;
 	config?: string;
@@ -58,6 +59,7 @@ program
 	.option('--attachments-base <path>', 'Base directory for resolving image paths')
 	.option('--image-mode <mode>', 'Image handling: upload or external', 'upload')
 	.option('--download-remote-images', 'Download remote images as attachments')
+	.option('--exclude <patterns>', 'Glob patterns to exclude files (comma-separated)')
 	.option('--no-skip-unchanged', 'Update even if content unchanged')
 	.option('--dry-run', 'Preview without updating Confluence')
 	.option('--json', 'Output results as JSON')
@@ -115,6 +117,7 @@ async function runCli(source: string, options: CliOptions): Promise<void> {
 		attachmentsBase: options.attachmentsBase || config?.attachments_base,
 		titleOverride: options.title || config?.title_override,
 		frontmatterPageIdKey: config?.frontmatter_page_id_key,
+		exclude: options.exclude || config?.exclude?.join(','),
 		imageMode: options.imageMode || config?.image_mode,
 		downloadRemoteImages: options.downloadRemoteImages ?? config?.download_remote_images,
 		skipIfUnchanged: options.skipUnchanged ?? config?.skip_if_unchanged,

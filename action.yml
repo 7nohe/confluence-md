@@ -54,6 +54,10 @@ inputs:
     description: 'Skip update when storage output is identical'
     required: false
     default: 'true'
+  exclude:
+    description: 'Glob patterns to exclude files in directory mode (comma or newline separated, e.g., "**/README.md,docs/draft/**")'
+    required: false
+    default: ''
   dry_run:
     description: 'Build output but do not update Confluence'
     required: false

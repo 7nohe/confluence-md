@@ -22,6 +22,7 @@ export function getInputs(): ActionInputs {
 		titleOverride: core.getInput('title_override') || undefined,
 		frontmatterPageIdKey: core.getInput('frontmatter_page_id_key') || 'confluence_page_id',
 		imageMode,
+		exclude: parseExcludePatterns(core.getInput('exclude')),
 		downloadRemoteImages: core.getBooleanInput('download_remote_images'),
 		skipIfUnchanged: core.getBooleanInput('skip_if_unchanged'),
 		dryRun: core.getBooleanInput('dry_run'),
@@ -38,6 +39,14 @@ export function getInputs(): ActionInputs {
 function normalizeBaseUrl(url: string): string {
 	// Remove trailing slash if present
 	return url.replace(/\/+$/, '');
+}
+
+export function parseExcludePatterns(input: string): string[] {
+	if (!input.trim()) return [];
+	return input
+		.split(/[,\n]/)
+		.map((p) => p.trim())
+		.filter((p) => p !== '');
 }
 
 function validateImageMode(mode: string): 'upload' | 'external' {
@@ -92,6 +101,7 @@ export interface RawInputs {
 	downloadRemoteImages?: boolean;
 	skipIfUnchanged?: boolean;
 	dryRun?: boolean;
+	exclude?: string[] | string;
 	notifyWatchers?: boolean;
 	userAgent?: string;
 }
@@ -116,6 +126,9 @@ export function createInputsFromRaw(raw: RawInputs): ActionInputs {
 		titleOverride: raw.titleOverride || undefined,
 		frontmatterPageIdKey: raw.frontmatterPageIdKey || 'confluence_page_id',
 		imageMode,
+		exclude: Array.isArray(raw.exclude)
+			? raw.exclude
+			: parseExcludePatterns(raw.exclude || ''),
 		downloadRemoteImages: raw.downloadRemoteImages ?? false,
 		skipIfUnchanged: raw.skipIfUnchanged ?? true,
 		dryRun: raw.dryRun ?? false,
