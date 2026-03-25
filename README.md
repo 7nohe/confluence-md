@@ -191,6 +191,7 @@ Single-file outputs (`page_url`, `page_id`, `version`, `updated`, `attachments_u
 - Confluence Cloud only (no Server or Data Center support).
 - Each Markdown file maps to a single Confluence page. Directory mode syncs multiple files sequentially.
 - Raw HTML in Markdown is stripped for safety.
+- For line breaks inside table cells, use `<br>` or `<br/>`. Literal newlines inside GFM table cells are not supported and may be parsed as separate rows.
 
 ## Versioning
 This project follows Semantic Versioning. See `CHANGELOG.md` for release notes.

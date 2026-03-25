@@ -298,6 +298,48 @@ describe('converter/handlers', () => {
 			const node = { type: 'tableCell', children: [] } as MdastNode;
 			expect(tableCellHandler(node, state)).toBe('<td>cell</td>');
 		});
+
+		it('tableCellHandler should preserve <br> HTML inside cells', () => {
+			const state = createMockState({
+				convertNode: (node) => {
+					if (node.type === 'text') {
+						return node.value ?? '';
+					}
+					return '';
+				},
+			});
+			const node = {
+				type: 'tableCell',
+				children: [
+					{ type: 'text', value: 'foo' },
+					{ type: 'html', value: '<br>' },
+					{ type: 'text', value: 'bar' },
+				],
+			} as MdastNode;
+
+			expect(tableCellHandler(node, state)).toBe('<td>foo<br/>bar</td>');
+		});
+
+		it('tableCellHandler should strip non-break HTML inside cells', () => {
+			const state = createMockState({
+				convertNode: (node) => {
+					if (node.type === 'text') {
+						return node.value ?? '';
+					}
+					return '';
+				},
+			});
+			const node = {
+				type: 'tableCell',
+				children: [
+					{ type: 'html', value: '<span>' },
+					{ type: 'text', value: 'foo' },
+					{ type: 'html', value: '</span>' },
+				],
+			} as MdastNode;
+
+			expect(tableCellHandler(node, state)).toBe('<td>foo</td>');
+		});
 	});
 
 	describe('link and image handlers', () => {
