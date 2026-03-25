@@ -200,6 +200,31 @@ describe('Markdown conversion', () => {
 			expect(storage).toContain('<tbody>');
 			expect(storage).toContain('<td>1</td>');
 		});
+
+		it('should preserve <br> inside table cells', () => {
+			const md = `| A |
+| --- |
+| foo<br>bar |`;
+			const { storage } = convertMarkdown(md, defaultOptions);
+			expect(storage).toContain('<td>foo<br/>bar</td>');
+		});
+
+		it('should preserve <br/> inside table cells', () => {
+			const md = `| A |
+| --- |
+| foo<br/>bar |`;
+			const { storage } = convertMarkdown(md, defaultOptions);
+			expect(storage).toContain('<td>foo<br/>bar</td>');
+		});
+
+		it('should strip non-break HTML inside table cells', () => {
+			const md = `| A |
+| --- |
+| <span>foo</span> |`;
+			const { storage } = convertMarkdown(md, defaultOptions);
+			expect(storage).toContain('<td>foo</td>');
+			expect(storage).not.toContain('<span>');
+		});
 	});
 
 	describe('links', () => {
