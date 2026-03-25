@@ -1,6 +1,6 @@
 {
   "name": "@7nohe/confluence-md",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "GitHub Action and CLI to convert Markdown (GFM) to Confluence Cloud storage format",
   "main": "dist/index.js",
   "bin": {
