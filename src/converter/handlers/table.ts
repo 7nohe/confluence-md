@@ -2,8 +2,7 @@
  * Table-related node handlers
  */
 
-import type { Html } from 'mdast';
-import type { Table, TableCell, TableRow } from 'mdast';
+import type { Html, Table, TableCell, TableRow } from 'mdast';
 import type { Parent } from 'unist';
 import { createElement } from '../xml';
 import type { MdastNode, NodeHandler } from './types';
