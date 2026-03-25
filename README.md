@@ -119,7 +119,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: 7nohe/confluence-md@v1
+      - uses: 7nohe/confluence-md@v0.1.5
         with:
           confluence_base_url: https://example.atlassian.net
           email: you@example.com
