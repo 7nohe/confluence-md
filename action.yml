@@ -22,7 +22,7 @@ inputs:
   write_page_id:
     description: 'Write created page ID back to frontmatter'
     required: false
-    default: 'false'
+    default: 'true'
   email:
     description: 'Confluence account email'
     required: true

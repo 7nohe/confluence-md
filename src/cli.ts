@@ -54,7 +54,7 @@ program
 	.option('-p, --page-id <id>', 'Confluence page ID (or use frontmatter)')
 	.option('-s, --space-key <key>', 'Confluence space key (creates new page if no page_id)')
 	.option('--parent-page-id <id>', 'Parent page ID for new pages')
-	.option('--write-page-id', 'Write created page ID back to frontmatter')
+	.option('--no-write-page-id', 'Disable writing created page ID back to frontmatter')
 	.option('--title <title>', 'Override page title')
 	.option('--attachments-base <path>', 'Base directory for resolving image paths')
 	.option('--image-mode <mode>', 'Image handling: upload or external', 'upload')
