@@ -126,9 +126,7 @@ export function createInputsFromRaw(raw: RawInputs): ActionInputs {
 		titleOverride: raw.titleOverride || undefined,
 		frontmatterPageIdKey: raw.frontmatterPageIdKey || 'confluence_page_id',
 		imageMode,
-		exclude: Array.isArray(raw.exclude)
-			? raw.exclude
-			: parseExcludePatterns(raw.exclude || ''),
+		exclude: Array.isArray(raw.exclude) ? raw.exclude : parseExcludePatterns(raw.exclude || ''),
 		downloadRemoteImages: raw.downloadRemoteImages ?? false,
 		skipIfUnchanged: raw.skipIfUnchanged ?? true,
 		dryRun: raw.dryRun ?? false,

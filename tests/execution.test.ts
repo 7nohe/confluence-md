@@ -94,10 +94,7 @@ describe('execution.ts', () => {
 
 			const files = resolveMarkdownFiles(docsDir, ['**/README.md']);
 
-			expect(files.map((f) => f.displayPath)).toEqual([
-				'docs/guide/nested.md',
-				'docs/page.md',
-			]);
+			expect(files.map((f) => f.displayPath)).toEqual(['docs/guide/nested.md', 'docs/page.md']);
 		});
 
 		it('should support multiple exclude patterns', () => {
