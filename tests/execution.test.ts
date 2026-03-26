@@ -41,6 +41,7 @@ describe('execution.ts', () => {
 		downloadRemoteImages: false,
 		skipIfUnchanged: true,
 		dryRun: false,
+		exclude: [],
 		notifyWatchers: false,
 		userAgent: 'test-agent',
 	};
@@ -72,6 +73,52 @@ describe('execution.ts', () => {
 				{ path: path.join(guideDir, 'nested.md'), displayPath: 'docs/guide/nested.md' },
 			]);
 		});
+
+		it('should exclude files matching glob patterns', () => {
+			const docsDir = path.join(process.cwd(), 'docs');
+			const guideDir = path.join(docsDir, 'guide');
+
+			vi.mocked(fs.readdirSync).mockImplementation((dirPath) => {
+				if (dirPath === docsDir) {
+					return [
+						createFileEntry('README.md'),
+						createFileEntry('page.md'),
+						createDirectoryEntry('guide'),
+					];
+				}
+				if (dirPath === guideDir) {
+					return [createFileEntry('nested.md')];
+				}
+				return [];
+			});
+
+			const files = resolveMarkdownFiles(docsDir, ['**/README.md']);
+
+			expect(files.map((f) => f.displayPath)).toEqual(['docs/guide/nested.md', 'docs/page.md']);
+		});
+
+		it('should support multiple exclude patterns', () => {
+			const docsDir = path.join(process.cwd(), 'docs');
+			const draftDir = path.join(docsDir, 'draft');
+
+			vi.mocked(fs.readdirSync).mockImplementation((dirPath) => {
+				if (dirPath === docsDir) {
+					return [
+						createFileEntry('README.md'),
+						createFileEntry('page.md'),
+						createDirectoryEntry('draft'),
+					];
+				}
+				if (dirPath === draftDir) {
+					return [createFileEntry('wip.md')];
+				}
+				return [];
+			});
+
+			const files = resolveMarkdownFiles(docsDir, ['**/README.md', 'draft/**']);
+
+			expect(files.map((f) => f.displayPath)).toEqual(['docs/page.md']);
+		});
 	});
 
 	describe('runSourceExecution', () => {
@@ -89,6 +136,7 @@ describe('execution.ts', () => {
 					pageId: '12345',
 					version: 1,
 					updated: true,
+					created: false,
 					attachmentsUploaded: 0,
 					contentHash: 'abc123',
 				},
@@ -107,7 +155,8 @@ describe('execution.ts', () => {
 					titleOverride: undefined,
 				}),
 				markdownContent: '\n# Test',
-				pageId: '12345',
+				frontmatter: { confluence_page_id: 12345 },
+				pageTarget: { mode: 'update', pageId: '12345' },
 			});
 		});
 
@@ -127,6 +176,7 @@ describe('execution.ts', () => {
 					pageId: '12345',
 					version: 1,
 					updated: true,
+					created: false,
 					attachmentsUploaded: 0,
 					contentHash: 'abc123',
 				},
@@ -143,7 +193,8 @@ describe('execution.ts', () => {
 					titleOverride: 'Frontmatter Title',
 				}),
 				markdownContent: '\n# Test',
-				pageId: '12345',
+				frontmatter: { confluence_page_id: 12345, title: 'Frontmatter Title' },
+				pageTarget: { mode: 'update', pageId: '12345' },
 			});
 		});
 
@@ -163,6 +214,7 @@ describe('execution.ts', () => {
 					pageId: '12345',
 					version: 1,
 					updated: true,
+					created: false,
 					attachmentsUploaded: 0,
 					contentHash: 'abc123',
 				},
@@ -180,7 +232,8 @@ describe('execution.ts', () => {
 					titleOverride: 'CLI Title',
 				}),
 				markdownContent: '\n# Test',
-				pageId: '12345',
+				frontmatter: { confluence_page_id: 12345, title: 'Frontmatter Title' },
+				pageTarget: { mode: 'update', pageId: '12345' },
 			});
 		});
 
@@ -215,6 +268,7 @@ describe('execution.ts', () => {
 					pageId: '12345',
 					version: 2,
 					updated: true,
+					created: false,
 					attachmentsUploaded: 1,
 					contentHash: 'hash123',
 				},
@@ -250,8 +304,7 @@ describe('execution.ts', () => {
 			expect(result.result.skipped).toEqual([
 				{
 					source: 'docs/b.md',
-					reason:
-						"Page ID not found. Please provide it via the 'page_id' input or in frontmatter using the key 'confluence_page_id'.",
+					reason: expect.stringContaining('Page ID not found'),
 				},
 			]);
 			expect(runConversion).toHaveBeenCalledTimes(1);
@@ -262,7 +315,8 @@ describe('execution.ts', () => {
 					titleOverride: undefined,
 				}),
 				markdownContent: '\n# A',
-				pageId: '12345',
+				frontmatter: { confluence_page_id: 12345 },
+				pageTarget: { mode: 'update', pageId: '12345' },
 			});
 		});
 
@@ -285,6 +339,7 @@ describe('execution.ts', () => {
 					pageId: '12345',
 					version: 2,
 					updated: true,
+					created: false,
 					attachmentsUploaded: 1,
 					contentHash: 'hash123',
 				},
@@ -298,7 +353,8 @@ describe('execution.ts', () => {
 					titleOverride: 'Directory Title',
 				}),
 				markdownContent: '\n# A',
-				pageId: '12345',
+				frontmatter: { confluence_page_id: 12345, title: 'Directory Title' },
+				pageTarget: { mode: 'update', pageId: '12345' },
 			});
 		});
 
@@ -321,6 +377,7 @@ describe('execution.ts', () => {
 					pageId: '12345',
 					version: 2,
 					updated: true,
+					created: false,
 					attachmentsUploaded: 1,
 					contentHash: 'hash123',
 				},
@@ -337,7 +394,8 @@ describe('execution.ts', () => {
 					titleOverride: 'Frontmatter Title',
 				}),
 				markdownContent: '\n# A',
-				pageId: '12345',
+				frontmatter: { confluence_page_id: 12345, title: 'Frontmatter Title' },
+				pageTarget: { mode: 'update', pageId: '12345' },
 			});
 		});
 

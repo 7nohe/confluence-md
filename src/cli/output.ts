@@ -14,6 +14,7 @@ export function formatJsonOutput(outputs: ActionOutputs): string {
 			pageId: outputs.pageId,
 			version: outputs.version,
 			updated: outputs.updated,
+			created: outputs.created,
 			attachmentsUploaded: outputs.attachmentsUploaded,
 			contentHash: outputs.contentHash,
 		},
@@ -46,6 +47,7 @@ export function printSuccessOutput(outputs: ActionOutputs): void {
 	console.log(`Page ID: ${outputs.pageId}`);
 	console.log(`Version: ${outputs.version}`);
 	console.log(`Updated: ${outputs.updated}`);
+	console.log(`Created: ${outputs.created}`);
 	console.log(`Attachments uploaded: ${outputs.attachmentsUploaded}`);
 }
 

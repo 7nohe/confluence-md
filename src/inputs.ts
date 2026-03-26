@@ -1,6 +1,6 @@
 import * as path from 'node:path';
 import * as core from '@actions/core';
-import type { ActionInputs } from './types';
+import type { ActionInputs, PageTarget } from './types';
 
 export function getInputs(): ActionInputs {
 	const source = core.getInput('source', { required: true });
@@ -11,6 +11,9 @@ export function getInputs(): ActionInputs {
 	const inputs: ActionInputs = {
 		confluenceBaseUrl: normalizeBaseUrl(core.getInput('confluence_base_url', { required: true })),
 		pageId: core.getInput('page_id') || undefined,
+		spaceKey: core.getInput('space_key') || undefined,
+		parentPageId: core.getInput('parent_page_id') || undefined,
+		writePageId: core.getInput('write_page_id') !== 'false',
 		email: core.getInput('email', { required: true }),
 		apiToken: core.getInput('api_token', { required: true }),
 		source,
@@ -19,6 +22,7 @@ export function getInputs(): ActionInputs {
 		titleOverride: core.getInput('title_override') || undefined,
 		frontmatterPageIdKey: core.getInput('frontmatter_page_id_key') || 'confluence_page_id',
 		imageMode,
+		exclude: parseExcludePatterns(core.getInput('exclude')),
 		downloadRemoteImages: core.getBooleanInput('download_remote_images'),
 		skipIfUnchanged: core.getBooleanInput('skip_if_unchanged'),
 		dryRun: core.getBooleanInput('dry_run'),
@@ -37,6 +41,14 @@ function normalizeBaseUrl(url: string): string {
 	return url.replace(/\/+$/, '');
 }
 
+export function parseExcludePatterns(input: string): string[] {
+	if (!input.trim()) return [];
+	return input
+		.split(/[,\n]/)
+		.map((p) => p.trim())
+		.filter((p) => p !== '');
+}
+
 function validateImageMode(mode: string): 'upload' | 'external' {
 	if (mode !== 'upload' && mode !== 'external') {
 		throw new Error(`Invalid image_mode: ${mode}. Must be 'upload' or 'external'.`);
@@ -47,25 +59,26 @@ function validateImageMode(mode: string): 'upload' | 'external' {
 export class PageIdNotFoundError extends Error {
 	constructor(frontmatterKey: string) {
 		super(
-			`Page ID not found. Please provide it via the 'page_id' input or in frontmatter using the key '${frontmatterKey}'.`
+			`Page ID not found. Provide 'page_id', frontmatter '${frontmatterKey}', or 'space_key' to create a new page.`
 		);
 		this.name = 'PageIdNotFoundError';
 	}
 }
 
-export function validateInputs(
+export function resolvePageTarget(
 	inputs: ActionInputs,
 	pageIdFromFrontmatter?: string,
 	options?: { allowInputFallback?: boolean }
-): string {
+): PageTarget {
 	const allowInputFallback = options?.allowInputFallback ?? true;
 	const pageId = pageIdFromFrontmatter || (allowInputFallback ? inputs.pageId : undefined);
-
-	if (!pageId) {
-		throw new PageIdNotFoundError(inputs.frontmatterPageIdKey);
+	if (pageId) {
+		return { mode: 'update', pageId };
 	}
-
-	return pageId;
+	if (inputs.spaceKey) {
+		return { mode: 'create', spaceKey: inputs.spaceKey, parentPageId: inputs.parentPageId };
+	}
+	throw new PageIdNotFoundError(inputs.frontmatterPageIdKey);
 }
 
 /**
@@ -78,6 +91,9 @@ export interface RawInputs {
 	apiToken: string;
 	source: string;
 	pageId?: string;
+	spaceKey?: string;
+	parentPageId?: string;
+	writePageId?: boolean;
 	attachmentsBase?: string;
 	titleOverride?: string;
 	frontmatterPageIdKey?: string;
@@ -85,6 +101,7 @@ export interface RawInputs {
 	downloadRemoteImages?: boolean;
 	skipIfUnchanged?: boolean;
 	dryRun?: boolean;
+	exclude?: string[] | string;
 	notifyWatchers?: boolean;
 	userAgent?: string;
 }
@@ -98,6 +115,9 @@ export function createInputsFromRaw(raw: RawInputs): ActionInputs {
 	return {
 		confluenceBaseUrl: normalizeBaseUrl(raw.confluenceBaseUrl),
 		pageId: raw.pageId || undefined,
+		spaceKey: raw.spaceKey || undefined,
+		parentPageId: raw.parentPageId || undefined,
+		writePageId: raw.writePageId ?? true,
 		email: raw.email,
 		apiToken: raw.apiToken,
 		source: raw.source,
@@ -106,6 +126,7 @@ export function createInputsFromRaw(raw: RawInputs): ActionInputs {
 		titleOverride: raw.titleOverride || undefined,
 		frontmatterPageIdKey: raw.frontmatterPageIdKey || 'confluence_page_id',
 		imageMode,
+		exclude: Array.isArray(raw.exclude) ? raw.exclude : parseExcludePatterns(raw.exclude || ''),
 		downloadRemoteImages: raw.downloadRemoteImages ?? false,
 		skipIfUnchanged: raw.skipIfUnchanged ?? true,
 		dryRun: raw.dryRun ?? false,

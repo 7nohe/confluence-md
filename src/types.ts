@@ -1,6 +1,9 @@
 export interface ActionInputs {
 	confluenceBaseUrl: string;
 	pageId?: string;
+	spaceKey?: string;
+	parentPageId?: string;
+	writePageId?: boolean;
 	email: string;
 	apiToken: string;
 	source: string;
@@ -12,6 +15,7 @@ export interface ActionInputs {
 	downloadRemoteImages: boolean;
 	skipIfUnchanged: boolean;
 	dryRun: boolean;
+	exclude: string[];
 	notifyWatchers: boolean;
 	userAgent: string;
 }
@@ -97,9 +101,26 @@ export interface ActionOutputs {
 	pageId: string;
 	version: number;
 	updated: boolean;
+	created: boolean;
 	attachmentsUploaded: number;
 	contentHash: string;
 }
+
+export interface ConfluencePageCreate {
+	spaceId: string;
+	status: 'current';
+	title: string;
+	parentId?: string;
+	body: { representation: 'storage'; value: string };
+}
+
+export interface ConfluenceSpaceResult {
+	results: Array<{ id: string; key: string; name: string }>;
+}
+
+export type PageTarget =
+	| { mode: 'update'; pageId: string }
+	| { mode: 'create'; spaceKey: string; parentPageId?: string };
 
 export interface ResolvedSourceFile {
 	path: string;

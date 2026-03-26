@@ -1,6 +1,11 @@
 import * as core from '@actions/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createInputsFromRaw, getInputs, validateInputs } from '../src/inputs';
+import {
+	createInputsFromRaw,
+	getInputs,
+	parseExcludePatterns,
+	resolvePageTarget,
+} from '../src/inputs';
 
 vi.mock('@actions/core', () => ({
 	getInput: vi.fn(),
@@ -297,132 +302,92 @@ describe('inputs.ts', () => {
 		});
 	});
 
-	describe('validateInputs', () => {
-		it('should return pageId from frontmatter when provided', () => {
-			const inputs = {
-				confluenceBaseUrl: 'https://example.atlassian.net/wiki',
-				email: 'user@example.com',
-				apiToken: 'token',
-				source: 'test.md',
-				attachmentsBase: '.',
-				frontmatterPageIdKey: 'confluence_page_id',
-				imageMode: 'upload' as const,
-				downloadRemoteImages: false,
-				skipIfUnchanged: false,
-				dryRun: false,
-				notifyWatchers: false,
-				userAgent: 'test',
-			};
+	describe('resolvePageTarget', () => {
+		const baseInputs = {
+			confluenceBaseUrl: 'https://example.atlassian.net/wiki',
+			email: 'user@example.com',
+			apiToken: 'token',
+			source: 'test.md',
+			attachmentsBase: '.',
+			frontmatterPageIdKey: 'confluence_page_id',
+			imageMode: 'upload' as const,
+			downloadRemoteImages: false,
+			skipIfUnchanged: false,
+			dryRun: false,
+			notifyWatchers: false,
+			userAgent: 'test',
+		};
 
-			const result = validateInputs(inputs, '67890');
-
-			expect(result).toBe('67890');
+		it('should return update mode when pageId is in frontmatter', () => {
+			const result = resolvePageTarget(baseInputs, '67890');
+			expect(result).toEqual({ mode: 'update', pageId: '67890' });
 		});
 
-		it('should return pageId from inputs when frontmatter not provided', () => {
-			const inputs = {
-				confluenceBaseUrl: 'https://example.atlassian.net/wiki',
-				email: 'user@example.com',
-				apiToken: 'token',
-				source: 'test.md',
-				attachmentsBase: '.',
+		it('should return update mode when pageId is in inputs', () => {
+			const result = resolvePageTarget({ ...baseInputs, pageId: '12345' });
+			expect(result).toEqual({ mode: 'update', pageId: '12345' });
+		});
+
+		it('should prefer frontmatter pageId over inputs pageId', () => {
+			const result = resolvePageTarget({ ...baseInputs, pageId: '12345' }, '67890');
+			expect(result).toEqual({ mode: 'update', pageId: '67890' });
+		});
+
+		it('should return create mode when spaceKey is provided and no pageId', () => {
+			const result = resolvePageTarget({ ...baseInputs, spaceKey: 'MYSPACE' });
+			expect(result).toEqual({ mode: 'create', spaceKey: 'MYSPACE', parentPageId: undefined });
+		});
+
+		it('should include parentPageId in create mode', () => {
+			const result = resolvePageTarget({
+				...baseInputs,
+				spaceKey: 'MYSPACE',
+				parentPageId: '11111',
+			});
+			expect(result).toEqual({ mode: 'create', spaceKey: 'MYSPACE', parentPageId: '11111' });
+		});
+
+		it('should prefer update mode when both pageId and spaceKey are provided', () => {
+			const result = resolvePageTarget({
+				...baseInputs,
 				pageId: '12345',
-				frontmatterPageIdKey: 'confluence_page_id',
-				imageMode: 'upload' as const,
-				downloadRemoteImages: false,
-				skipIfUnchanged: false,
-				dryRun: false,
-				notifyWatchers: false,
-				userAgent: 'test',
-			};
-
-			const result = validateInputs(inputs);
-
-			expect(result).toBe('12345');
+				spaceKey: 'MYSPACE',
+			});
+			expect(result).toEqual({ mode: 'update', pageId: '12345' });
 		});
 
-		it('should prefer frontmatter pageId over input pageId', () => {
-			const inputs = {
-				confluenceBaseUrl: 'https://example.atlassian.net/wiki',
-				email: 'user@example.com',
-				apiToken: 'token',
-				source: 'test.md',
-				attachmentsBase: '.',
-				pageId: '12345',
-				frontmatterPageIdKey: 'confluence_page_id',
-				imageMode: 'upload' as const,
-				downloadRemoteImages: false,
-				skipIfUnchanged: false,
-				dryRun: false,
-				notifyWatchers: false,
-				userAgent: 'test',
-			};
-
-			const result = validateInputs(inputs, '67890');
-
-			expect(result).toBe('67890');
-		});
-
-		it('should throw error when no pageId is found', () => {
-			const inputs = {
-				confluenceBaseUrl: 'https://example.atlassian.net/wiki',
-				email: 'user@example.com',
-				apiToken: 'token',
-				source: 'test.md',
-				attachmentsBase: '.',
-				frontmatterPageIdKey: 'confluence_page_id',
-				imageMode: 'upload' as const,
-				downloadRemoteImages: false,
-				skipIfUnchanged: false,
-				dryRun: false,
-				notifyWatchers: false,
-				userAgent: 'test',
-			};
-
-			expect(() => validateInputs(inputs)).toThrow(
-				"Page ID not found. Please provide it via the 'page_id' input or in frontmatter using the key 'confluence_page_id'."
+		it('should throw error when no pageId and no spaceKey', () => {
+			expect(() => resolvePageTarget(baseInputs)).toThrow(
+				"Page ID not found. Provide 'page_id', frontmatter 'confluence_page_id', or 'space_key' to create a new page."
 			);
 		});
+	});
 
-		it('should ignore input pageId when fallback is disabled', () => {
-			const inputs = {
-				confluenceBaseUrl: 'https://example.atlassian.net/wiki',
-				email: 'user@example.com',
-				apiToken: 'token',
-				source: 'test.md',
-				attachmentsBase: '.',
-				pageId: '12345',
-				frontmatterPageIdKey: 'confluence_page_id',
-				imageMode: 'upload' as const,
-				downloadRemoteImages: false,
-				skipIfUnchanged: false,
-				dryRun: false,
-				notifyWatchers: false,
-				userAgent: 'test',
-			};
-
-			expect(() => validateInputs(inputs, undefined, { allowInputFallback: false })).toThrow(
-				"Page ID not found. Please provide it via the 'page_id' input or in frontmatter using the key 'confluence_page_id'."
-			);
+	describe('parseExcludePatterns', () => {
+		it('should return empty array for empty string', () => {
+			expect(parseExcludePatterns('')).toEqual([]);
+			expect(parseExcludePatterns('  ')).toEqual([]);
 		});
 
-		it('should include custom frontmatter key in error message', () => {
-			const inputs = {
-				confluenceBaseUrl: 'https://example.atlassian.net/wiki',
-				email: 'user@example.com',
-				apiToken: 'token',
-				source: 'test.md',
-				attachmentsBase: '.',
-				frontmatterPageIdKey: 'custom_page_id',
-				imageMode: 'upload' as const,
-				downloadRemoteImages: false,
-				skipIfUnchanged: false,
-				dryRun: false,
-				notifyWatchers: false,
-				userAgent: 'test',
-			};
+		it('should split comma-separated patterns', () => {
+			expect(parseExcludePatterns('**/README.md,docs/draft/**')).toEqual([
+				'**/README.md',
+				'docs/draft/**',
+			]);
+		});
 
-			expect(() => validateInputs(inputs)).toThrow("'custom_page_id'");
+		it('should split newline-separated patterns', () => {
+			expect(parseExcludePatterns('**/README.md\ndocs/draft/**')).toEqual([
+				'**/README.md',
+				'docs/draft/**',
+			]);
+		});
+
+		it('should trim whitespace and skip empty entries', () => {
+			expect(parseExcludePatterns(' **/README.md , , docs/draft/** ')).toEqual([
+				'**/README.md',
+				'docs/draft/**',
+			]);
 		});
 	});
 

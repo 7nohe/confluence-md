@@ -1,12 +1,14 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { minimatch } from 'minimatch';
 import { type RunResult, runConversion } from './core';
 import {
 	extractFrontmatter,
 	getPageIdFromFrontmatter,
 	getTitleFromFrontmatter,
+	writePageIdToFrontmatter,
 } from './frontmatter';
-import { PageIdNotFoundError, validateInputs } from './inputs';
+import { PageIdNotFoundError, resolvePageTarget } from './inputs';
 import { getLogger } from './logger';
 import type {
 	ActionInputs,
@@ -47,7 +49,7 @@ export async function runSourceExecution(inputs: ActionInputs): Promise<SourceEx
 		throw new Error(`Source path must be a Markdown file or directory: ${sourcePath}`);
 	}
 
-	const files = resolveMarkdownFiles(sourcePath);
+	const files = resolveMarkdownFiles(sourcePath, inputs.exclude);
 	if (files.length === 0) {
 		throw new Error(`No Markdown files found in directory: ${sourcePath}`);
 	}
@@ -58,12 +60,23 @@ export async function runSourceExecution(inputs: ActionInputs): Promise<SourceEx
 	};
 }
 
-export function resolveMarkdownFiles(sourceDirectory: string): ResolvedSourceFile[] {
+export function resolveMarkdownFiles(
+	sourceDirectory: string,
+	exclude: string[] = []
+): ResolvedSourceFile[] {
 	const root = path.resolve(sourceDirectory);
 	const files = collectMarkdownFiles(root, root);
 
-	files.sort((a, b) => a.displayPath.localeCompare(b.displayPath));
-	return files;
+	const filtered =
+		exclude.length > 0
+			? files.filter((f) => {
+					const relativePath = path.relative(root, f.path);
+					return !exclude.some((pattern) => minimatch(relativePath, pattern, { dot: true }));
+				})
+			: files;
+
+	filtered.sort((a, b) => a.displayPath.localeCompare(b.displayPath));
+	return filtered;
 }
 
 async function runSingleSource(inputs: ActionInputs, sourcePath: string): Promise<RunResult> {
@@ -76,13 +89,17 @@ async function runSingleSource(inputs: ActionInputs, sourcePath: string): Promis
 		frontmatter,
 		resolvedInputs.frontmatterPageIdKey
 	);
-	const pageId = validateInputs(resolvedInputs, frontmatterPageId);
+	const pageTarget = resolvePageTarget(resolvedInputs, frontmatterPageId);
 
-	return runConversion({
+	const result = await runConversion({
 		inputs: resolvedInputs,
 		markdownContent: markdownBody,
-		pageId,
+		frontmatter,
+		pageTarget,
 	});
+
+	maybeWriteBackPageId(result, resolvedInputs, sourcePath, markdown);
+	return result;
 }
 
 async function runMultipleSources(
@@ -154,12 +171,17 @@ async function runSingleSourceForDirectory(
 		frontmatter,
 		resolvedInputs.frontmatterPageIdKey
 	);
-	const pageId = validateInputs(resolvedInputs, frontmatterPageId, { allowInputFallback: false });
+	const pageTarget = resolvePageTarget(resolvedInputs, frontmatterPageId, {
+		allowInputFallback: false,
+	});
 	const result = await runConversion({
 		inputs: resolvedInputs,
 		markdownContent: markdownBody,
-		pageId,
+		frontmatter,
+		pageTarget,
 	});
+
+	maybeWriteBackPageId(result, resolvedInputs, file.path, markdown, file.displayPath);
 
 	return {
 		source: file.displayPath,
@@ -170,6 +192,20 @@ async function runSingleSourceForDirectory(
 		attachmentsUploaded: result.outputs.attachmentsUploaded,
 		contentHash: result.outputs.contentHash,
 	};
+}
+
+function maybeWriteBackPageId(
+	result: RunResult,
+	inputs: ActionInputs,
+	filePath: string,
+	markdown: string,
+	displayPath?: string
+): void {
+	if (!result.outputs.created || !inputs.writePageId || inputs.dryRun) return;
+	const logger = getLogger();
+	const label = displayPath ? `${displayPath} frontmatter` : 'frontmatter';
+	logger.info(`Writing page ID ${result.outputs.pageId} back to ${label}...`);
+	writePageIdToFrontmatter(filePath, markdown, result.outputs.pageId, inputs.frontmatterPageIdKey);
 }
 
 function createInputsForFile(

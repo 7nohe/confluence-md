@@ -44,6 +44,17 @@ export class ConfluenceClient {
 	}
 
 	/**
+	 * Make a POST request with JSON body
+	 */
+	async post<T>(path: string, body: unknown): Promise<T> {
+		const url = `${this.baseUrl}${path}`;
+		getLogger().debug(`POST ${url}`);
+
+		const response = await this.http.post(url, JSON.stringify(body));
+		return this.handleResponse<T>(response);
+	}
+
+	/**
 	 * Make a PUT request with JSON body
 	 */
 	async put<T>(path: string, body: unknown): Promise<T> {

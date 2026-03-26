@@ -13,6 +13,9 @@ export interface ConfigFile {
 	confluence_base_url?: string;
 	email?: string;
 	page_id?: string;
+	space_key?: string;
+	parent_page_id?: string;
+	write_page_id?: boolean;
 	title_override?: string;
 	attachments_base?: string;
 	frontmatter_page_id_key?: string;
@@ -20,6 +23,7 @@ export interface ConfigFile {
 	download_remote_images?: boolean;
 	skip_if_unchanged?: boolean;
 	dry_run?: boolean;
+	exclude?: string[];
 	notify_watchers?: boolean;
 }
 

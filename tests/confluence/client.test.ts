@@ -8,12 +8,14 @@ vi.mock('@actions/core', () => ({
 
 // Mock @actions/http-client
 const mockGet = vi.fn();
+const mockPost = vi.fn();
 const mockPut = vi.fn();
 const mockSendStream = vi.fn();
 
 vi.mock('@actions/http-client', () => ({
 	HttpClient: vi.fn().mockImplementation(() => ({
 		get: mockGet,
+		post: mockPost,
 		put: mockPut,
 		sendStream: mockSendStream,
 	})),
@@ -165,6 +167,38 @@ describe('ConfluenceClient', () => {
 			const result = await client.get('/api/test');
 
 			expect(result).toEqual({});
+		});
+	});
+
+	describe('post', () => {
+		it('should make POST request with JSON body', async () => {
+			const client = new ConfluenceClient(defaultOptions);
+			const body = { spaceId: 'space-123', title: 'New Page', status: 'current' };
+			mockPost.mockResolvedValue(createMockResponse(200, { id: '99999' }));
+
+			await client.post('/api/v2/pages', body);
+
+			expect(mockPost).toHaveBeenCalledWith(
+				'https://example.atlassian.net/wiki/api/v2/pages',
+				JSON.stringify(body)
+			);
+		});
+
+		it('should return parsed JSON response', async () => {
+			const client = new ConfluenceClient(defaultOptions);
+			const responseData = { id: '99999', title: 'New Page', version: { number: 1 } };
+			mockPost.mockResolvedValue(createMockResponse(200, responseData));
+
+			const result = await client.post('/api/v2/pages', {});
+
+			expect(result).toEqual(responseData);
+		});
+
+		it('should throw error on 4xx status', async () => {
+			const client = new ConfluenceClient(defaultOptions);
+			mockPost.mockResolvedValue(createMockResponse(400, { message: 'Bad request' }));
+
+			await expect(client.post('/api/test', {})).rejects.toThrow('HTTP 400: Bad request');
 		});
 	});
 

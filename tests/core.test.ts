@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { runConversion } from '../src/core';
-import type { ActionInputs } from '../src/types';
+import type { ActionInputs, PageTarget } from '../src/types';
 
 // Mock confluence modules
 vi.mock('../src/confluence/client', () => ({
 	ConfluenceClient: vi.fn().mockImplementation(() => ({
 		get: vi.fn(),
 		put: vi.fn(),
+		post: vi.fn(),
 		postMultipart: vi.fn(),
 	})),
 }));
@@ -14,6 +15,8 @@ vi.mock('../src/confluence/client', () => ({
 vi.mock('../src/confluence/pages', () => ({
 	getPage: vi.fn(),
 	updatePage: vi.fn(),
+	createPage: vi.fn(),
+	resolveSpaceId: vi.fn(),
 	buildPageUrl: vi.fn(),
 }));
 
@@ -24,7 +27,13 @@ vi.mock('../src/confluence/attachments', () => ({
 import { uploadAttachments } from '../src/confluence/attachments';
 // Import mocked modules
 import { ConfluenceClient } from '../src/confluence/client';
-import { buildPageUrl, getPage, updatePage } from '../src/confluence/pages';
+import {
+	buildPageUrl,
+	createPage,
+	getPage,
+	resolveSpaceId,
+	updatePage,
+} from '../src/confluence/pages';
 
 describe('core.ts', () => {
 	const baseInputs: ActionInputs = {
@@ -42,23 +51,28 @@ describe('core.ts', () => {
 		userAgent: 'test-agent',
 	};
 
+	const updateTarget: PageTarget = { mode: 'update', pageId: '12345' };
+	const createTarget: PageTarget = { mode: 'create', spaceKey: 'MYSPACE' };
+
 	beforeEach(() => {
 		vi.clearAllMocks();
 	});
 
 	describe('runConversion', () => {
-		describe('dry run mode', () => {
+		describe('dry run mode (update)', () => {
 			it('should skip API calls in dry run mode', async () => {
 				const result = await runConversion({
 					inputs: { ...baseInputs, dryRun: true },
 					markdownContent: '# Test',
-					pageId: '12345',
+					frontmatter: {},
+					pageTarget: updateTarget,
 				});
 
 				expect(ConfluenceClient).not.toHaveBeenCalled();
 				expect(getPage).not.toHaveBeenCalled();
 				expect(updatePage).not.toHaveBeenCalled();
 				expect(result.outputs.updated).toBe(false);
+				expect(result.outputs.created).toBe(false);
 				expect(result.outputs.version).toBe(0);
 			});
 
@@ -66,7 +80,8 @@ describe('core.ts', () => {
 				const result = await runConversion({
 					inputs: { ...baseInputs, dryRun: true },
 					markdownContent: '# Test',
-					pageId: '12345',
+					frontmatter: {},
+					pageTarget: updateTarget,
 				});
 
 				expect(result.storage).toBeDefined();
@@ -77,7 +92,8 @@ describe('core.ts', () => {
 				const result = await runConversion({
 					inputs: { ...baseInputs, dryRun: true },
 					markdownContent: '# Test',
-					pageId: '12345',
+					frontmatter: {},
+					pageTarget: updateTarget,
 				});
 
 				expect(result.outputs.pageUrl).toBe(
@@ -90,7 +106,8 @@ describe('core.ts', () => {
 				const result = await runConversion({
 					inputs: { ...baseInputs, dryRun: true },
 					markdownContent: '# Test',
-					pageId: '12345',
+					frontmatter: {},
+					pageTarget: updateTarget,
 				});
 
 				expect(result.outputs.contentHash).toBeDefined();
@@ -101,14 +118,30 @@ describe('core.ts', () => {
 				const result = await runConversion({
 					inputs: { ...baseInputs, dryRun: true },
 					markdownContent: '# Test\n\n![alt](image.png)',
-					pageId: '12345',
+					frontmatter: {},
+					pageTarget: updateTarget,
 				});
 
 				expect(result.imagesCount).toBe(1);
 			});
 		});
 
-		describe('normal mode', () => {
+		describe('dry run mode (create)', () => {
+			it('should return created=true and pageId=NEW', async () => {
+				const result = await runConversion({
+					inputs: { ...baseInputs, dryRun: true },
+					markdownContent: '# Test',
+					frontmatter: {},
+					pageTarget: createTarget,
+				});
+
+				expect(result.outputs.created).toBe(true);
+				expect(result.outputs.pageId).toBe('NEW');
+				expect(ConfluenceClient).not.toHaveBeenCalled();
+			});
+		});
+
+		describe('update mode', () => {
 			beforeEach(() => {
 				vi.mocked(getPage).mockResolvedValue({
 					id: '12345',
@@ -132,7 +165,8 @@ describe('core.ts', () => {
 				await runConversion({
 					inputs: baseInputs,
 					markdownContent: '# Test',
-					pageId: '12345',
+					frontmatter: {},
+					pageTarget: updateTarget,
 				});
 
 				expect(ConfluenceClient).toHaveBeenCalledWith({
@@ -147,7 +181,8 @@ describe('core.ts', () => {
 				await runConversion({
 					inputs: baseInputs,
 					markdownContent: '# Test',
-					pageId: '12345',
+					frontmatter: {},
+					pageTarget: updateTarget,
 				});
 
 				expect(getPage).toHaveBeenCalledWith(expect.anything(), '12345');
@@ -157,7 +192,8 @@ describe('core.ts', () => {
 				await runConversion({
 					inputs: baseInputs,
 					markdownContent: '# New Content',
-					pageId: '12345',
+					frontmatter: {},
+					pageTarget: updateTarget,
 				});
 
 				expect(updatePage).toHaveBeenCalled();
@@ -174,7 +210,8 @@ describe('core.ts', () => {
 				const result = await runConversion({
 					inputs: { ...baseInputs, skipIfUnchanged: true },
 					markdownContent: '# Test',
-					pageId: '12345',
+					frontmatter: {},
+					pageTarget: updateTarget,
 				});
 
 				expect(updatePage).not.toHaveBeenCalled();
@@ -196,7 +233,8 @@ describe('core.ts', () => {
 						titleOverride: 'Renamed Page',
 					},
 					markdownContent: '# Test',
-					pageId: '12345',
+					frontmatter: {},
+					pageTarget: updateTarget,
 				});
 
 				expect(updatePage).toHaveBeenCalledWith(
@@ -221,7 +259,8 @@ describe('core.ts', () => {
 				const result = await runConversion({
 					inputs: { ...baseInputs, skipIfUnchanged: false },
 					markdownContent: '# Test',
-					pageId: '12345',
+					frontmatter: {},
+					pageTarget: updateTarget,
 				});
 
 				expect(updatePage).toHaveBeenCalled();
@@ -234,7 +273,8 @@ describe('core.ts', () => {
 				const result = await runConversion({
 					inputs: baseInputs,
 					markdownContent: '# Test\n\n![img1](a.png)\n![img2](b.png)',
-					pageId: '12345',
+					frontmatter: {},
+					pageTarget: updateTarget,
 				});
 
 				expect(uploadAttachments).toHaveBeenCalled();
@@ -245,7 +285,8 @@ describe('core.ts', () => {
 				await runConversion({
 					inputs: { ...baseInputs, titleOverride: 'Custom Title' },
 					markdownContent: '# Test',
-					pageId: '12345',
+					frontmatter: {},
+					pageTarget: updateTarget,
 				});
 
 				expect(updatePage).toHaveBeenCalledWith(
@@ -262,7 +303,8 @@ describe('core.ts', () => {
 				await runConversion({
 					inputs: baseInputs,
 					markdownContent: '# Test',
-					pageId: '12345',
+					frontmatter: {},
+					pageTarget: updateTarget,
 				});
 
 				expect(updatePage).toHaveBeenCalledWith(
@@ -279,7 +321,8 @@ describe('core.ts', () => {
 				const result = await runConversion({
 					inputs: baseInputs,
 					markdownContent: '# Test',
-					pageId: '12345',
+					frontmatter: {},
+					pageTarget: updateTarget,
 				});
 
 				expect(result.outputs.pageUrl).toBe(
@@ -288,6 +331,7 @@ describe('core.ts', () => {
 				expect(result.outputs.pageId).toBe('12345');
 				expect(result.outputs.version).toBe(2);
 				expect(result.outputs.updated).toBe(true);
+				expect(result.outputs.created).toBe(false);
 				expect(result.outputs.contentHash).toBeDefined();
 			});
 
@@ -302,10 +346,152 @@ describe('core.ts', () => {
 				const result = await runConversion({
 					inputs: baseInputs,
 					markdownContent: '# Test',
-					pageId: '12345',
+					frontmatter: {},
+					pageTarget: updateTarget,
 				});
 
 				expect(result.outputs.version).toBe(6);
+			});
+		});
+
+		describe('create mode', () => {
+			beforeEach(() => {
+				vi.mocked(resolveSpaceId).mockResolvedValue('space-id-123');
+				vi.mocked(createPage).mockResolvedValue({
+					id: '99999',
+					title: 'New Page',
+					version: { number: 1 },
+					_links: { webui: '/spaces/MYSPACE/pages/99999' },
+				});
+				vi.mocked(buildPageUrl).mockReturnValue(
+					'https://example.atlassian.net/wiki/spaces/MYSPACE/pages/99999'
+				);
+				vi.mocked(uploadAttachments).mockResolvedValue(0);
+			});
+
+			it('should resolve space ID and create page', async () => {
+				const result = await runConversion({
+					inputs: baseInputs,
+					markdownContent: '# My New Page',
+					frontmatter: {},
+					pageTarget: createTarget,
+				});
+
+				expect(resolveSpaceId).toHaveBeenCalledWith(expect.anything(), 'MYSPACE');
+				expect(createPage).toHaveBeenCalledWith(
+					expect.anything(),
+					'My New Page',
+					'space-id-123',
+					expect.any(String),
+					undefined
+				);
+				expect(result.outputs.created).toBe(true);
+				expect(result.outputs.pageId).toBe('99999');
+			});
+
+			it('should use titleOverride over H1', async () => {
+				await runConversion({
+					inputs: { ...baseInputs, titleOverride: 'Override Title' },
+					markdownContent: '# H1 Title',
+					frontmatter: {},
+					pageTarget: createTarget,
+				});
+
+				expect(createPage).toHaveBeenCalledWith(
+					expect.anything(),
+					'Override Title',
+					expect.any(String),
+					expect.any(String),
+					undefined
+				);
+			});
+
+			it('should use frontmatter title over H1', async () => {
+				await runConversion({
+					inputs: baseInputs,
+					markdownContent: '# H1 Title',
+					frontmatter: { title: 'FM Title' },
+					pageTarget: createTarget,
+				});
+
+				expect(createPage).toHaveBeenCalledWith(
+					expect.anything(),
+					'FM Title',
+					expect.any(String),
+					expect.any(String),
+					undefined
+				);
+			});
+
+			it('should use filename as fallback title', async () => {
+				await runConversion({
+					inputs: baseInputs,
+					markdownContent: 'No heading here',
+					frontmatter: {},
+					pageTarget: createTarget,
+				});
+
+				expect(createPage).toHaveBeenCalledWith(
+					expect.anything(),
+					'test',
+					expect.any(String),
+					expect.any(String),
+					undefined
+				);
+			});
+
+			it('should pass parentPageId when provided', async () => {
+				const targetWithParent: PageTarget = {
+					mode: 'create',
+					spaceKey: 'MYSPACE',
+					parentPageId: '11111',
+				};
+
+				await runConversion({
+					inputs: baseInputs,
+					markdownContent: '# Test',
+					frontmatter: {},
+					pageTarget: targetWithParent,
+				});
+
+				expect(createPage).toHaveBeenCalledWith(
+					expect.anything(),
+					'Test',
+					'space-id-123',
+					expect.any(String),
+					'11111'
+				);
+			});
+
+			it('should upload attachments after creating page', async () => {
+				vi.mocked(uploadAttachments).mockResolvedValue(2);
+
+				const result = await runConversion({
+					inputs: baseInputs,
+					markdownContent: '# Test\n\n![img](pic.png)',
+					frontmatter: {},
+					pageTarget: createTarget,
+				});
+
+				expect(uploadAttachments).toHaveBeenCalledWith(
+					expect.anything(),
+					'99999',
+					expect.any(Array),
+					'.'
+				);
+				expect(result.outputs.attachmentsUploaded).toBe(2);
+			});
+
+			it('should not call getPage or updatePage', async () => {
+				await runConversion({
+					inputs: baseInputs,
+					markdownContent: '# Test',
+					frontmatter: {},
+					pageTarget: createTarget,
+				});
+
+				expect(getPage).not.toHaveBeenCalled();
+				expect(updatePage).not.toHaveBeenCalled();
 			});
 		});
 	});

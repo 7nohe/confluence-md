@@ -27,12 +27,16 @@ interface CliOptions {
 	url?: string;
 	email?: string;
 	pageId?: string;
+	spaceKey?: string;
+	parentPageId?: string;
+	writePageId?: boolean;
 	title?: string;
 	attachmentsBase?: string;
 	imageMode?: string;
 	downloadRemoteImages?: boolean;
 	skipUnchanged?: boolean;
 	dryRun?: boolean;
+	exclude?: string;
 	json?: boolean;
 	verbose?: boolean;
 	config?: string;
@@ -48,10 +52,14 @@ program
 	.option('-u, --url <url>', 'Confluence base URL (or CONFLUENCE_BASE_URL env)')
 	.option('-e, --email <email>', 'Confluence account email (or CONFLUENCE_EMAIL env)')
 	.option('-p, --page-id <id>', 'Confluence page ID (or use frontmatter)')
+	.option('-s, --space-key <key>', 'Confluence space key (creates new page if no page_id)')
+	.option('--parent-page-id <id>', 'Parent page ID for new pages')
+	.option('--no-write-page-id', 'Disable writing created page ID back to frontmatter')
 	.option('--title <title>', 'Override page title')
 	.option('--attachments-base <path>', 'Base directory for resolving image paths')
 	.option('--image-mode <mode>', 'Image handling: upload or external', 'upload')
 	.option('--download-remote-images', 'Download remote images as attachments')
+	.option('--exclude <patterns>', 'Glob patterns to exclude files (comma-separated)')
 	.option('--no-skip-unchanged', 'Update even if content unchanged')
 	.option('--dry-run', 'Preview without updating Confluence')
 	.option('--json', 'Output results as JSON')
@@ -103,9 +111,13 @@ async function runCli(source: string, options: CliOptions): Promise<void> {
 		email,
 		apiToken,
 		pageId: options.pageId || config?.page_id,
+		spaceKey: options.spaceKey || config?.space_key,
+		parentPageId: options.parentPageId || config?.parent_page_id,
+		writePageId: options.writePageId ?? config?.write_page_id,
 		attachmentsBase: options.attachmentsBase || config?.attachments_base,
 		titleOverride: options.title || config?.title_override,
 		frontmatterPageIdKey: config?.frontmatter_page_id_key,
+		exclude: options.exclude || config?.exclude?.join(','),
 		imageMode: options.imageMode || config?.image_mode,
 		downloadRemoteImages: options.downloadRemoteImages ?? config?.download_remote_images,
 		skipIfUnchanged: options.skipUnchanged ?? config?.skip_if_unchanged,

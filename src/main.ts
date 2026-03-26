@@ -32,6 +32,7 @@ async function run(): Promise<void> {
 			core.setOutput('page_id', execution.result.outputs.pageId);
 			core.setOutput('version', execution.result.outputs.version.toString());
 			core.setOutput('updated', execution.result.outputs.updated.toString());
+			core.setOutput('created', execution.result.outputs.created.toString());
 			core.setOutput(
 				'attachments_uploaded',
 				execution.result.outputs.attachmentsUploaded.toString()
@@ -46,6 +47,7 @@ async function run(): Promise<void> {
 				core.info(`Page ID: ${execution.result.outputs.pageId}`);
 				core.info(`Version: ${execution.result.outputs.version}`);
 				core.info(`Updated: ${execution.result.outputs.updated}`);
+				core.info(`Created: ${execution.result.outputs.created}`);
 				core.info(`Attachments uploaded: ${execution.result.outputs.attachmentsUploaded}`);
 				core.info(`Content hash: ${execution.result.outputs.contentHash}`);
 			}
@@ -56,6 +58,7 @@ async function run(): Promise<void> {
 		core.setOutput('page_id', '');
 		core.setOutput('version', '');
 		core.setOutput('updated', '');
+		core.setOutput('created', '');
 		core.setOutput('attachments_uploaded', '');
 		core.setOutput('content_hash', '');
 		core.setOutput('total_files', execution.result.summary.total.toString());
