@@ -23,6 +23,7 @@ jobs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
       major: ${{ steps.release.outputs.major }}
+      pr: ${{ steps.release.outputs.pr }}
     steps:
       - uses: googleapis/release-please-action@v4
         id: release
@@ -31,15 +32,21 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
-  build-and-tag:
-    name: Build dist and finalize release tags
+  # Build the Action bundle straight into the open release PR. main is
+  # protected (changes must go through a pull request), so the bundle reaches
+  # main only when the release PR is merged — its release commit therefore
+  # already carries an up-to-date dist/, and the release tag (which stays on
+  # main) is immediately runnable via `uses:@vX`. Pushing to the release PR's
+  # own branch is allowed because branch protection only covers main.
+  build-release-pr-dist:
+    name: Build dist into the release PR
     runs-on: ubuntu-latest
     needs: release-please
-    if: ${{ github.event_name == 'push' && needs.release-please.outputs.release_created == 'true' }}
+    if: ${{ github.event_name == 'push' && needs.release-please.outputs.pr != '' }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ fromJSON(needs.release-please.outputs.pr).headBranchName }}
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -53,29 +60,40 @@ jobs:
       - name: Build
         run: npm run build
 
-      # dist/ is gitignored during development, so the release-please release
-      # commit has no bundle yet. Build it here, commit it ON TOP of main, and
-      # point the release tag at that new commit. The tag stays on main's
-      # history, so release-please can always detect the previous release
-      # boundary on the next run (unlike the old off-main "chore: add dist"
-      # commit, which broke boundary detection and duplicated the changelog).
-      - name: Commit dist and move tags to the release commit
+      - name: Commit refreshed dist into the release PR branch
+        env:
+          HEAD_BRANCH: ${{ fromJSON(needs.release-please.outputs.pr).headBranchName }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add dist/index.js dist/index.js.map dist/sourcemap-register.js dist/licenses.txt
+          if git diff --cached --quiet; then
+            echo "dist already up to date."
+            exit 0
+          fi
+          git commit -m "chore: build dist for release"
+          git push origin "HEAD:${HEAD_BRANCH}"
+
+  tag-major-version:
+    name: Update major version tag
+    runs-on: ubuntu-latest
+    needs: release-please
+    if: ${{ github.event_name == 'push' && needs.release-please.outputs.release_created == 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # The release commit already carries the bundle (built into the release
+      # PR above), so just point the floating major tag at the release tag.
+      - name: Move major version tag
         env:
           TAG_NAME: ${{ needs.release-please.outputs.tag_name }}
           MAJOR: ${{ needs.release-please.outputs.major }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -f dist/index.js dist/index.js.map dist/sourcemap-register.js dist/licenses.txt
-          git commit -m "chore: build dist for ${TAG_NAME}"
-          # Guard against a concurrent push to main during the release run.
-          git pull --rebase origin main
-          git push origin HEAD:main
-          # Move both the release tag and the floating major tag to the commit
-          # that actually carries the bundle.
-          git tag -fa "${TAG_NAME}" -m "${TAG_NAME}"
-          git push origin "${TAG_NAME}" --force
-          git tag -fa "v${MAJOR}" -m "Update v${MAJOR} tag to ${TAG_NAME}"
+          git tag -fa "v${MAJOR}" "${TAG_NAME}" -m "Update v${MAJOR} tag to ${TAG_NAME}"
           git push origin "v${MAJOR}" --force
 
   publish-npm:
