@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and this project adheres to
 Semantic Versioning.
 
+## [0.2.1](https://github.com/7nohe/confluence-md/compare/v0.2.0...v0.2.1) (2026-06-24)
+
+
+### Bug Fixes
+
+* update existing attachment data instead of failing on duplicate filename ([276a421](https://github.com/7nohe/confluence-md/commit/276a421f4eaa9e8bc0f45a40bd9500f31c300c83))
+
 ## [0.2.0](https://github.com/7nohe/confluence-md/compare/v0.1.6...v0.2.0) (2026-06-24)
 
 
