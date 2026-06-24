@@ -1,6 +1,12 @@
 node_modules
 
-# Build output. Not committed during development — the release workflow builds
-# the Action bundle and commits it to the release commit so that
-# `uses: 7nohe/confluence-md@vX` resolves a ready-to-run build at the tag.
-dist
+# Build output. The Action bundle (dist/index.js and its runtime companions)
+# is committed so that `uses: 7nohe/confluence-md@vX` resolves a ready-to-run
+# build at the release tag. It is refreshed automatically by the release
+# workflow (into the release PR), so contributors never build it by hand.
+# The CLI build (dist/cli) and type declarations are not committed.
+dist/*
+!dist/index.js
+!dist/index.js.map
+!dist/sourcemap-register.js
+!dist/licenses.txt

@@ -36,13 +36,14 @@ npm run build:action
 npm run build:cli
 ```
 
-`dist/` is **not** committed during development — it is gitignored, so you never
-have to build it or include it in a pull request. The release workflow builds
-the Action bundle (`dist/index.js` and its runtime companions) when a release is
-published, commits it on top of `main`, and points the release tag at that
-commit, so that `uses: 7nohe/confluence-md@vX` resolves a ready-to-run build at
-the tag. (`main` between releases therefore has no committed bundle; only the
-release tags carry one.) The CLI is built fresh at npm publish time.
+The Action bundle (`dist/index.js` and its runtime companions) is committed so
+that `uses: 7nohe/confluence-md@vX` resolves a ready-to-run build at the release
+tag. You do **not** build it by hand and you do **not** touch it in feature
+PRs — the release workflow rebuilds it automatically and commits it **into the
+release PR**, so the released commit always carries an up-to-date bundle while
+your own pull requests stay free of `dist/` churn. (The CLI build, `dist/cli/`,
+and type declarations are not committed; they are built on demand and at npm
+publish time.)
 
 ### Test
 
@@ -176,7 +177,7 @@ src/
 
 tests/                # Test files
 test-fixtures/        # Test data
-dist/                 # Build output (gitignored; built at release time)
+dist/index.js         # Action bundle (committed; refreshed by the release workflow)
 ```
 
 ## Commit Convention
@@ -250,11 +251,11 @@ Releases are automated using [release-please](https://github.com/googleapis/rele
 3. The PR accumulates changes and updates:
    - `package.json` version
    - `CHANGELOG.md`
+   - the rebuilt Action bundle (`dist/`), committed into the release PR by CI
 4. Merge the Release PR to publish:
-   - GitHub Release is created
-   - The Action bundle is built and committed on top of `main`
-   - Version tag (e.g., `v1.2.3`) is pointed at that bundle commit
-   - Major version tag (e.g., `v1`) is updated to the same commit
+   - GitHub Release and version tag (e.g., `v1.2.3`) are created on the
+     release commit, which already carries the up-to-date bundle
+   - Major version tag (e.g., `v1`) is moved to that commit
    - The package is published to npm
 
 ### Manual Verification (Optional)
