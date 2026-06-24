@@ -32,12 +32,15 @@ vi.mock('fs', async () => {
 describe('attachments.ts', () => {
 	let mockClient: {
 		postMultipart: ReturnType<typeof vi.fn>;
+		get: ReturnType<typeof vi.fn>;
 	};
 
 	beforeEach(() => {
 		vi.clearAllMocks();
 		mockClient = {
 			postMultipart: vi.fn(),
+			// Default: no existing attachment with the same filename
+			get: vi.fn().mockResolvedValue({ results: [] }),
 		};
 	});
 
@@ -307,6 +310,72 @@ describe('attachments.ts', () => {
 					Buffer.from('')
 				)
 			).rejects.toThrow('Failed to upload attachment: test.png');
+		});
+
+		it('should look up an existing attachment by filename', async () => {
+			mockClient.postMultipart.mockResolvedValue({
+				results: [{ id: '123', title: 'test.png', mediaType: 'image/png', fileSize: 1024 }],
+			});
+
+			await uploadAttachment(
+				mockClient as unknown as ConfluenceClient,
+				'12345',
+				'test.png',
+				Buffer.from('image data')
+			);
+
+			expect(mockClient.get).toHaveBeenCalledWith(
+				expect.stringContaining('/wiki/rest/api/content/12345/child/attachment?filename=test.png')
+			);
+		});
+
+		it('should update the existing attachment data when the same filename exists', async () => {
+			mockClient.get.mockResolvedValue({
+				results: [{ id: '999', title: 'test.png', mediaType: 'image/png', fileSize: 512 }],
+			});
+			// The data-update endpoint returns the updated attachment directly
+			mockClient.postMultipart.mockResolvedValue({
+				id: '999',
+				title: 'test.png',
+				mediaType: 'image/png',
+				fileSize: 1024,
+			});
+
+			const result = await uploadAttachment(
+				mockClient as unknown as ConfluenceClient,
+				'12345',
+				'test.png',
+				Buffer.from('updated image data')
+			);
+
+			expect(mockClient.postMultipart).toHaveBeenCalledWith(
+				'/wiki/rest/api/content/12345/child/attachment/999/data',
+				'test.png',
+				expect.any(Buffer),
+				'image/png'
+			);
+			expect(result.id).toBe('999');
+		});
+
+		it('should create a new attachment when none exists', async () => {
+			mockClient.get.mockResolvedValue({ results: [] });
+			mockClient.postMultipart.mockResolvedValue({
+				results: [{ id: '1', title: 'new.png', mediaType: 'image/png', fileSize: 1024 }],
+			});
+
+			await uploadAttachment(
+				mockClient as unknown as ConfluenceClient,
+				'12345',
+				'new.png',
+				Buffer.from('image data')
+			);
+
+			expect(mockClient.postMultipart).toHaveBeenCalledWith(
+				'/wiki/rest/api/content/12345/child/attachment',
+				'new.png',
+				expect.any(Buffer),
+				'image/png'
+			);
 		});
 	});
 
