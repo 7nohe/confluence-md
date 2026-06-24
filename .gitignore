@@ -1,2 +1,11 @@
 node_modules
-dist
+
+# Build output.
+# The Action bundle (dist/index.js and its runtime companions) is committed so
+# that `uses: 7nohe/confluence-md@vX` resolves a ready-to-run build at the tag.
+# Everything else under dist/ (CLI build, type declarations) is built on demand.
+dist/*
+!dist/index.js
+!dist/index.js.map
+!dist/sourcemap-register.js
+!dist/licenses.txt
