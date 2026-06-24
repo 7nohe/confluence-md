@@ -1,2 +1,6 @@
 node_modules
+
+# Build output. Not committed during development — the release workflow builds
+# the Action bundle and commits it to the release commit so that
+# `uses: 7nohe/confluence-md@vX` resolves a ready-to-run build at the tag.
 dist

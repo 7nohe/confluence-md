@@ -1,0 +1,5 @@
+# The Action bundle is a generated build artifact committed for `uses:@vX`.
+# Mark it so GitHub collapses it in diffs and excludes it from language stats.
+dist/index.js linguist-generated=true
+dist/index.js.map linguist-generated=true
+dist/sourcemap-register.js linguist-generated=true

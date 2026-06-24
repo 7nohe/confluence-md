@@ -36,6 +36,14 @@ npm run build:action
 npm run build:cli
 ```
 
+`dist/` is **not** committed during development — it is gitignored, so you never
+have to build it or include it in a pull request. The release workflow builds
+the Action bundle (`dist/index.js` and its runtime companions) when a release is
+published, commits it on top of `main`, and points the release tag at that
+commit, so that `uses: 7nohe/confluence-md@vX` resolves a ready-to-run build at
+the tag. (`main` between releases therefore has no committed bundle; only the
+release tags carry one.) The CLI is built fresh at npm publish time.
+
 ### Test
 
 ```bash
@@ -168,7 +176,7 @@ src/
 
 tests/                # Test files
 test-fixtures/        # Test data
-dist/                 # Build output (committed)
+dist/                 # Build output (gitignored; built at release time)
 ```
 
 ## Commit Convention
@@ -244,8 +252,10 @@ Releases are automated using [release-please](https://github.com/googleapis/rele
    - `CHANGELOG.md`
 4. Merge the Release PR to publish:
    - GitHub Release is created
-   - Version tag (e.g., `v1.2.3`) is created
-   - Major version tag (e.g., `v1`) is updated
+   - The Action bundle is built and committed on top of `main`
+   - Version tag (e.g., `v1.2.3`) is pointed at that bundle commit
+   - Major version tag (e.g., `v1`) is updated to the same commit
+   - The package is published to npm
 
 ### Manual Verification (Optional)
 
@@ -254,4 +264,3 @@ Before merging a Release PR:
 1. `npm run ci` passes
 2. `act push` succeeds
 3. `act -j test-action -W .github/workflows/test-action.yml` succeeds
-4. Changes to `dist/` are committed
