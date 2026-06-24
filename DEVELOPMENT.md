@@ -4,7 +4,7 @@ This document explains how to develop and test confluence-md locally.
 
 ## Prerequisites
 
-- Node.js 20+
+- Node.js 24+ (the Action runs on the `node24` runtime)
 - Docker Desktop
 - [act](https://github.com/nektos/act) (for running GitHub Actions locally)
 
