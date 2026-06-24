@@ -38,10 +38,13 @@ npm run build:cli
 
 The Action bundle (`dist/index.js` and its runtime companions) is committed to
 the repository so that `uses: 7nohe/confluence-md@vX` resolves a ready-to-run
-build at the release tag. When you change anything under `src/`, run
-`npm run build` and commit the updated `dist/` files in the same PR — CI fails
-if the committed bundle is stale. The CLI build (`dist/cli/`) and type
-declarations are not committed; they are built on demand and at npm publish time.
+build at the release tag. You do **not** need to build it by hand: the
+`Build dist` workflow rebuilds the bundle on every pull request and pushes the
+updated `dist/` back to your branch automatically. (Fork PRs get a read-only
+token, so for those the workflow only verifies the bundle and fails if it is
+stale — run `npm run build` and commit `dist/` yourself in that case.) The CLI
+build (`dist/cli/`) and type declarations are not committed; they are built on
+demand and at npm publish time.
 
 ### Test
 
