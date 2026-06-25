@@ -50,6 +50,10 @@ inputs:
     description: 'Download remote images and upload as attachments'
     required: false
     default: 'false'
+  mermaid_macro:
+    description: 'Macro name emitted for mermaid code fences. Set to match the Mermaid app installed in your Confluence site (e.g. mermaid-cloud).'
+    required: false
+    default: 'mermaid'
   skip_if_unchanged:
     description: 'Skip update when storage output is identical'
     required: false

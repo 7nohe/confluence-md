@@ -32,6 +32,7 @@ function createMockState(overrides?: Partial<ConversionState>): ConversionState 
 	const context: ConversionContext = {
 		imageMode: 'upload',
 		downloadRemoteImages: false,
+		mermaidMacro: 'mermaid',
 		images: [],
 	};
 
@@ -241,6 +242,24 @@ describe('converter/handlers', () => {
 			const result = codeHandler(node, state);
 
 			expect(result).toContain('ac:name="mermaid"');
+			expect(result).toContain('graph LR; A-->B');
+		});
+
+		it('codeHandler should use the configured mermaid macro name', () => {
+			const state = createMockState({
+				context: {
+					attachmentsBase: '/test',
+					imageMode: 'upload',
+					downloadRemoteImages: false,
+					mermaidMacro: 'mermaid-cloud',
+					images: [],
+				},
+			});
+			const node = { type: 'code', lang: 'mermaid', value: 'graph LR; A-->B' } as MdastNode;
+			const result = codeHandler(node, state);
+
+			expect(result).toContain('ac:name="mermaid-cloud"');
+			expect(result).not.toContain('ac:name="mermaid"');
 			expect(result).toContain('graph LR; A-->B');
 		});
 

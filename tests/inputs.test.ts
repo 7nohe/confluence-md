@@ -143,6 +143,33 @@ describe('inputs.ts', () => {
 			expect(inputs.imageMode).toBe('upload');
 		});
 
+		it('should default mermaidMacro to "mermaid"', () => {
+			setupMockInputs({
+				source: 'test.md',
+				confluence_base_url: 'https://example.atlassian.net/wiki',
+				email: 'user@example.com',
+				api_token: 'token',
+			});
+
+			const inputs = getInputs();
+
+			expect(inputs.mermaidMacro).toBe('mermaid');
+		});
+
+		it('should read a custom mermaid_macro', () => {
+			setupMockInputs({
+				source: 'test.md',
+				confluence_base_url: 'https://example.atlassian.net/wiki',
+				email: 'user@example.com',
+				api_token: 'token',
+				mermaid_macro: 'mermaid-cloud',
+			});
+
+			const inputs = getInputs();
+
+			expect(inputs.mermaidMacro).toBe('mermaid-cloud');
+		});
+
 		it('should parse boolean inputs correctly', () => {
 			setupMockInputs(
 				{
@@ -416,6 +443,20 @@ describe('inputs.ts', () => {
 
 			expect(inputs.attachmentsBase).toBe('docs/pages');
 			expect(inputs.attachmentsBaseProvided).toBe(false);
+		});
+
+		it('should default mermaidMacro to "mermaid" and accept an override', () => {
+			const base = {
+				source: 'docs/page.md',
+				confluenceBaseUrl: 'https://example.atlassian.net',
+				email: 'user@example.com',
+				apiToken: 'token',
+			};
+
+			expect(createInputsFromRaw(base).mermaidMacro).toBe('mermaid');
+			expect(createInputsFromRaw({ ...base, mermaidMacro: 'mermaid-cloud' }).mermaidMacro).toBe(
+				'mermaid-cloud'
+			);
 		});
 
 		it('should use provided attachmentsBase', () => {

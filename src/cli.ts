@@ -34,6 +34,7 @@ interface CliOptions {
 	attachmentsBase?: string;
 	imageMode?: string;
 	downloadRemoteImages?: boolean;
+	mermaidMacro?: string;
 	skipUnchanged?: boolean;
 	dryRun?: boolean;
 	exclude?: string;
@@ -59,6 +60,10 @@ program
 	.option('--attachments-base <path>', 'Base directory for resolving image paths')
 	.option('--image-mode <mode>', 'Image handling: upload or external', 'upload')
 	.option('--download-remote-images', 'Download remote images as attachments')
+	.option(
+		'--mermaid-macro <name>',
+		'Macro name for mermaid fences (match your Confluence Mermaid app)'
+	)
 	.option('--exclude <patterns>', 'Glob patterns to exclude files (comma-separated)')
 	.option('--no-skip-unchanged', 'Update even if content unchanged')
 	.option('--dry-run', 'Preview without updating Confluence')
@@ -120,6 +125,7 @@ async function runCli(source: string, options: CliOptions): Promise<void> {
 		exclude: options.exclude || config?.exclude?.join(','),
 		imageMode: options.imageMode || config?.image_mode,
 		downloadRemoteImages: options.downloadRemoteImages ?? config?.download_remote_images,
+		mermaidMacro: options.mermaidMacro || config?.mermaid_macro,
 		skipIfUnchanged: options.skipUnchanged ?? config?.skip_if_unchanged,
 		dryRun: options.dryRun ?? config?.dry_run,
 		notifyWatchers: config?.notify_watchers,

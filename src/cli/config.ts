@@ -21,6 +21,7 @@ export interface ConfigFile {
 	frontmatter_page_id_key?: string;
 	image_mode?: string;
 	download_remote_images?: boolean;
+	mermaid_macro?: string;
 	skip_if_unchanged?: boolean;
 	dry_run?: boolean;
 	exclude?: string[];

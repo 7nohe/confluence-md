@@ -9,14 +9,16 @@ import type { NodeHandler } from './types';
 /**
  * Handle code block nodes (including mermaid)
  */
-export const codeHandler: NodeHandler = (node) => {
+export const codeHandler: NodeHandler = (node, state) => {
 	const code = node as unknown as Code;
 	const lang = code.lang || '';
 	const value = code.value || '';
 
-	// Handle Mermaid diagrams
+	// Handle Mermaid diagrams. The macro name is configurable so it can match
+	// whichever Mermaid app is installed in the target Confluence site.
 	if (lang.toLowerCase() === 'mermaid') {
-		return createMacro('mermaid', undefined, value, 'plain-text');
+		const macroName = state?.context?.mermaidMacro || 'mermaid';
+		return createMacro(macroName, undefined, value, 'plain-text');
 	}
 
 	// Regular code block with optional language parameter
