@@ -13,6 +13,7 @@ export interface ActionInputs {
 	frontmatterPageIdKey: string;
 	imageMode: 'upload' | 'external';
 	downloadRemoteImages: boolean;
+	mermaidMacro: string;
 	skipIfUnchanged: boolean;
 	dryRun: boolean;
 	exclude: string[];
@@ -45,6 +46,8 @@ export interface ConversionContext {
 	attachmentsBase: string;
 	imageMode: 'upload' | 'external';
 	downloadRemoteImages: boolean;
+	/** Macro name emitted for mermaid code fences (matches the installed Confluence app). */
+	mermaidMacro: string;
 	images: ImageReference[];
 }
 

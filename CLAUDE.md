@@ -70,7 +70,7 @@ See [DEVELOPMENT.md](./DEVELOPMENT.md) for details.
 - `attachments.ts` - Attachment upload (v1 API with multipart/form-data), image downloading
 
 ### Key Conversion Rules
-- Code fences with `mermaid` language produce `<ac:structured-macro ac:name="mermaid">`
+- Code fences with `mermaid` language produce `<ac:structured-macro ac:name="...">`; the macro name is configurable via the `mermaid_macro` input (default `mermaid`) to match the installed Confluence Mermaid app
 - Other code fences produce `<ac:structured-macro ac:name="code">` with language parameter
 - Local images become `<ac:image><ri:attachment ri:filename="..."/></ac:image>`
 - Remote images use `<ri:url ri:value="..."/>` (or download if `download_remote_images` is enabled)

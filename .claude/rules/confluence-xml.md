@@ -17,6 +17,8 @@ Confluence uses XHTML-based storage format with custom namespaces:
 ```
 
 ### Mermaid Diagram
+The macro name is configurable via the `mermaid_macro` input (default `mermaid`)
+so it can match the Mermaid app installed in the target Confluence site.
 ```xml
 <ac:structured-macro ac:name="mermaid">
   <ac:plain-text-body><![CDATA[graph LR; A-->B]]></ac:plain-text-body>

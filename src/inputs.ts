@@ -24,6 +24,7 @@ export function getInputs(): ActionInputs {
 		imageMode,
 		exclude: parseExcludePatterns(core.getInput('exclude')),
 		downloadRemoteImages: core.getBooleanInput('download_remote_images'),
+		mermaidMacro: core.getInput('mermaid_macro') || 'mermaid',
 		skipIfUnchanged: core.getBooleanInput('skip_if_unchanged'),
 		dryRun: core.getBooleanInput('dry_run'),
 		notifyWatchers: core.getBooleanInput('notify_watchers'),
@@ -99,6 +100,7 @@ export interface RawInputs {
 	frontmatterPageIdKey?: string;
 	imageMode?: string;
 	downloadRemoteImages?: boolean;
+	mermaidMacro?: string;
 	skipIfUnchanged?: boolean;
 	dryRun?: boolean;
 	exclude?: string[] | string;
@@ -128,6 +130,7 @@ export function createInputsFromRaw(raw: RawInputs): ActionInputs {
 		imageMode,
 		exclude: Array.isArray(raw.exclude) ? raw.exclude : parseExcludePatterns(raw.exclude || ''),
 		downloadRemoteImages: raw.downloadRemoteImages ?? false,
+		mermaidMacro: raw.mermaidMacro || 'mermaid',
 		skipIfUnchanged: raw.skipIfUnchanged ?? true,
 		dryRun: raw.dryRun ?? false,
 		notifyWatchers: raw.notifyWatchers ?? false,

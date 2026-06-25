@@ -14,6 +14,7 @@ export interface ConvertOptions {
 	attachmentsBase: string;
 	imageMode: 'upload' | 'external';
 	downloadRemoteImages: boolean;
+	mermaidMacro: string;
 }
 
 /**
@@ -29,6 +30,7 @@ export function convertMarkdown(markdown: string, options: ConvertOptions): Conv
 		attachmentsBase: options.attachmentsBase,
 		imageMode: options.imageMode,
 		downloadRemoteImages: options.downloadRemoteImages,
+		mermaidMacro: options.mermaidMacro,
 		images: [],
 	};
 

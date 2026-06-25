@@ -88,6 +88,7 @@ export async function runConversion(options: RunOptions): Promise<RunResult> {
 		attachmentsBase: inputs.attachmentsBase,
 		imageMode: inputs.imageMode,
 		downloadRemoteImages: inputs.downloadRemoteImages,
+		mermaidMacro: inputs.mermaidMacro,
 	});
 
 	const contentHash = crypto.createHash('sha256').update(storage).digest('hex').substring(0, 16);

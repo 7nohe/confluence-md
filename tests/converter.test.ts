@@ -101,6 +101,7 @@ describe('Markdown conversion', () => {
 		attachmentsBase: '/test',
 		imageMode: 'upload' as const,
 		downloadRemoteImages: false,
+		mermaidMacro: 'mermaid',
 	};
 
 	describe('headings', () => {

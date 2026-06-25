@@ -156,6 +156,7 @@ If frontmatter includes `title`, it is used as the Confluence page title. In sin
 | frontmatter_page_id_key | no | confluence_page_id | Frontmatter key used to extract the page ID |
 | image_mode | no | upload | Image handling mode: upload or external |
 | download_remote_images | no | false | Download remote images and upload as attachments |
+| mermaid_macro | no | mermaid | Macro name emitted for mermaid code fences (match your Confluence Mermaid app) |
 | skip_if_unchanged | no | true | Skip update when storage output is identical |
 | dry_run | no | false | Build output but do not update Confluence |
 | notify_watchers | no | false | Accepted but currently ignored |
@@ -186,6 +187,18 @@ Single-file outputs (`page_url`, `page_id`, `version`, `updated`, `attachments_u
 - Remote images use `ri:url` when `image_mode=external`.
 - If `download_remote_images=true`, remote images are downloaded and uploaded as attachments.
 - In directory mode without `attachments_base`, local images are resolved relative to each Markdown file.
+
+## Mermaid
+
+Confluence Cloud has no built-in Mermaid macro, so rendering relies on a Mermaid
+app installed in your site. ` ```mermaid ` code fences are converted to
+`<ac:structured-macro ac:name="...">` with the diagram source as the macro body.
+
+Because each Mermaid app uses a different macro name, set `mermaid_macro` to match
+the app installed in your site (for example `mermaid-cloud`). The default is
+`mermaid`. If no matching Mermaid app is installed, the diagram renders as an
+unknown macro — in that case, pre-render the diagram to an image and reference it
+as a normal Markdown image instead.
 
 ## Limitations
 - Confluence Cloud only (no Server or Data Center support).
