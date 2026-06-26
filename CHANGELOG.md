@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and this project adheres to
 Semantic Versioning.
 
+## [0.2.2](https://github.com/7nohe/confluence-md/compare/v0.2.1...v0.2.2) (2026-06-25)
+
+
+### Features
+
+* make the mermaid macro name configurable ([#21](https://github.com/7nohe/confluence-md/issues/21)) ([caec474](https://github.com/7nohe/confluence-md/commit/caec474ae80391e470591c1d9b10a14ff7414bfb))
+
 ## [0.2.1](https://github.com/7nohe/confluence-md/compare/v0.2.0...v0.2.1) (2026-06-24)
 
 

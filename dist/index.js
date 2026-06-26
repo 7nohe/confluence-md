@@ -31346,13 +31346,16 @@ const xml_1 = __nccwpck_require__(9053);
 /**
  * Handle code block nodes (including mermaid)
  */
-const codeHandler = (node) => {
+const codeHandler = (node, state) => {
+    var _a;
     const code = node;
     const lang = code.lang || '';
     const value = code.value || '';
-    // Handle Mermaid diagrams
+    // Handle Mermaid diagrams. The macro name is configurable so it can match
+    // whichever Mermaid app is installed in the target Confluence site.
     if (lang.toLowerCase() === 'mermaid') {
-        return (0, xml_1.createMacro)('mermaid', undefined, value, 'plain-text');
+        const macroName = ((_a = state === null || state === void 0 ? void 0 : state.context) === null || _a === void 0 ? void 0 : _a.mermaidMacro) || 'mermaid';
+        return (0, xml_1.createMacro)(macroName, undefined, value, 'plain-text');
     }
     // Regular code block with optional language parameter
     const params = lang ? { language: lang } : undefined;
@@ -31752,6 +31755,7 @@ function convertMarkdown(markdown, options) {
         attachmentsBase: options.attachmentsBase,
         imageMode: options.imageMode,
         downloadRemoteImages: options.downloadRemoteImages,
+        mermaidMacro: options.mermaidMacro,
         images: [],
     };
     // Track existing filenames to handle collisions
@@ -32029,6 +32033,7 @@ async function runConversion(options) {
         attachmentsBase: inputs.attachmentsBase,
         imageMode: inputs.imageMode,
         downloadRemoteImages: inputs.downloadRemoteImages,
+        mermaidMacro: inputs.mermaidMacro,
     });
     const contentHash = crypto.createHash('sha256').update(storage).digest('hex').substring(0, 16);
     logger.info(`Content hash: ${contentHash}`);
@@ -32516,6 +32521,7 @@ function getInputs() {
         imageMode,
         exclude: parseExcludePatterns(core.getInput('exclude')),
         downloadRemoteImages: core.getBooleanInput('download_remote_images'),
+        mermaidMacro: core.getInput('mermaid_macro') || 'mermaid',
         skipIfUnchanged: core.getBooleanInput('skip_if_unchanged'),
         dryRun: core.getBooleanInput('dry_run'),
         notifyWatchers: core.getBooleanInput('notify_watchers'),
@@ -32584,6 +32590,7 @@ function createInputsFromRaw(raw) {
         imageMode,
         exclude: Array.isArray(raw.exclude) ? raw.exclude : parseExcludePatterns(raw.exclude || ''),
         downloadRemoteImages: (_b = raw.downloadRemoteImages) !== null && _b !== void 0 ? _b : false,
+        mermaidMacro: raw.mermaidMacro || 'mermaid',
         skipIfUnchanged: (_c = raw.skipIfUnchanged) !== null && _c !== void 0 ? _c : true,
         dryRun: (_d = raw.dryRun) !== null && _d !== void 0 ? _d : false,
         notifyWatchers: (_e = raw.notifyWatchers) !== null && _e !== void 0 ? _e : false,
