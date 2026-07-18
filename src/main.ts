@@ -8,6 +8,20 @@ import { runSourceExecution } from './execution';
 import { getInputs } from './inputs';
 import { createActionsLogger, setLogger } from './logger';
 
+function setOutputs(values: Record<string, string | number | boolean>): void {
+	for (const [name, value] of Object.entries(values)) {
+		core.setOutput(name, typeof value === 'string' ? value : value.toString());
+	}
+}
+
+function printSummary(entries: Record<string, string | number | boolean>): void {
+	core.info('');
+	core.info('=== Summary ===');
+	for (const [label, value] of Object.entries(entries)) {
+		core.info(`${label}: ${value}`);
+	}
+}
+
 async function run(): Promise<void> {
 	try {
 		// Initialize logger for GitHub Actions
@@ -28,65 +42,63 @@ async function run(): Promise<void> {
 
 		// Step 4: Set outputs
 		if (execution.mode === 'single') {
-			core.setOutput('page_url', execution.result.outputs.pageUrl);
-			core.setOutput('page_id', execution.result.outputs.pageId);
-			core.setOutput('version', execution.result.outputs.version.toString());
-			core.setOutput('updated', execution.result.outputs.updated.toString());
-			core.setOutput('created', execution.result.outputs.created.toString());
-			core.setOutput(
-				'attachments_uploaded',
-				execution.result.outputs.attachmentsUploaded.toString()
-			);
-			core.setOutput('content_hash', execution.result.outputs.contentHash);
+			const { outputs } = execution.result;
+			setOutputs({
+				page_url: outputs.pageUrl,
+				page_id: outputs.pageId,
+				version: outputs.version,
+				updated: outputs.updated,
+				created: outputs.created,
+				attachments_uploaded: outputs.attachmentsUploaded,
+				content_hash: outputs.contentHash,
+			});
 
 			// Summary (only for non-dry-run, as dry-run prints its own summary)
 			if (!inputs.dryRun) {
-				core.info('');
-				core.info('=== Summary ===');
-				core.info(`Page URL: ${execution.result.outputs.pageUrl}`);
-				core.info(`Page ID: ${execution.result.outputs.pageId}`);
-				core.info(`Version: ${execution.result.outputs.version}`);
-				core.info(`Updated: ${execution.result.outputs.updated}`);
-				core.info(`Created: ${execution.result.outputs.created}`);
-				core.info(`Attachments uploaded: ${execution.result.outputs.attachmentsUploaded}`);
-				core.info(`Content hash: ${execution.result.outputs.contentHash}`);
+				printSummary({
+					'Page URL': outputs.pageUrl,
+					'Page ID': outputs.pageId,
+					Version: outputs.version,
+					Updated: outputs.updated,
+					Created: outputs.created,
+					'Attachments uploaded': outputs.attachmentsUploaded,
+					'Content hash': outputs.contentHash,
+				});
 			}
 			return;
 		}
 
-		core.setOutput('page_url', '');
-		core.setOutput('page_id', '');
-		core.setOutput('version', '');
-		core.setOutput('updated', '');
-		core.setOutput('created', '');
-		core.setOutput('attachments_uploaded', '');
-		core.setOutput('content_hash', '');
-		core.setOutput('total_files', execution.result.summary.total.toString());
-		core.setOutput('succeeded_files', execution.result.summary.succeeded.toString());
-		core.setOutput('failed_files', execution.result.summary.failed.toString());
-		core.setOutput('updated_files', execution.result.summary.updated.toString());
-		core.setOutput(
-			'attachments_uploaded_total',
-			execution.result.summary.attachmentsUploaded.toString()
-		);
-		core.setOutput('results_json', JSON.stringify(execution.result.results));
-		core.setOutput('failures_json', JSON.stringify(execution.result.failures));
-		core.setOutput('skipped_files', execution.result.summary.skipped.toString());
-		core.setOutput('skipped_json', JSON.stringify(execution.result.skipped));
+		const { summary, results, failures, skipped } = execution.result;
+		setOutputs({
+			page_url: '',
+			page_id: '',
+			version: '',
+			updated: '',
+			created: '',
+			attachments_uploaded: '',
+			content_hash: '',
+			total_files: summary.total,
+			succeeded_files: summary.succeeded,
+			failed_files: summary.failed,
+			updated_files: summary.updated,
+			attachments_uploaded_total: summary.attachmentsUploaded,
+			results_json: JSON.stringify(results),
+			failures_json: JSON.stringify(failures),
+			skipped_files: summary.skipped,
+			skipped_json: JSON.stringify(skipped),
+		});
 
-		core.info('');
-		core.info('=== Summary ===');
-		core.info(`Total files: ${execution.result.summary.total}`);
-		core.info(`Succeeded: ${execution.result.summary.succeeded}`);
-		core.info(`Failed: ${execution.result.summary.failed}`);
-		core.info(`Skipped: ${execution.result.summary.skipped}`);
-		core.info(`Updated: ${execution.result.summary.updated}`);
-		core.info(`Attachments uploaded: ${execution.result.summary.attachmentsUploaded}`);
+		printSummary({
+			'Total files': summary.total,
+			Succeeded: summary.succeeded,
+			Failed: summary.failed,
+			Skipped: summary.skipped,
+			Updated: summary.updated,
+			'Attachments uploaded': summary.attachmentsUploaded,
+		});
 
-		if (execution.result.failures.length > 0) {
-			core.setFailed(
-				`${execution.result.failures.length} file(s) failed during directory synchronization.`
-			);
+		if (failures.length > 0) {
+			core.setFailed(`${failures.length} file(s) failed during directory synchronization.`);
 		}
 	} catch (error) {
 		if (error instanceof Error) {

@@ -5,6 +5,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { HttpClient } from '@actions/http-client';
+import { resolveLocalImagePath } from '../images';
 import { getLogger } from '../logger';
 import type { ConfluenceAttachment, ImageReference } from '../types';
 import type { ConfluenceClient } from './client';
@@ -88,32 +89,22 @@ export async function uploadAttachment(
 	// Use v1 API for attachments (v2 doesn't support multipart upload well)
 	const existing = await findExistingAttachment(client, pageId, filename);
 
-	if (existing) {
-		getLogger().info(`Updating existing attachment: ${filename}`);
-
-		const result = await client.postMultipart<{ results?: ConfluenceAttachment[]; id?: string }>(
-			`/wiki/rest/api/content/${pageId}/child/attachment/${existing.id}/data`,
-			filename,
-			content,
-			mimeType
-		);
-
-		const attachment = extractAttachment(result, filename);
-		getLogger().debug(`Attachment updated: ${attachment.id}`);
-		return attachment;
-	}
-
-	getLogger().info(`Uploading attachment: ${filename}`);
+	const endpoint = existing
+		? `/wiki/rest/api/content/${pageId}/child/attachment/${existing.id}/data`
+		: `/wiki/rest/api/content/${pageId}/child/attachment`;
+	getLogger().info(
+		existing ? `Updating existing attachment: ${filename}` : `Uploading attachment: ${filename}`
+	);
 
 	const result = await client.postMultipart<{ results?: ConfluenceAttachment[]; id?: string }>(
-		`/wiki/rest/api/content/${pageId}/child/attachment`,
+		endpoint,
 		filename,
 		content,
 		mimeType
 	);
 
 	const attachment = extractAttachment(result, filename);
-	getLogger().debug(`Attachment uploaded: ${attachment.id}`);
+	getLogger().debug(`Attachment ${existing ? 'updated' : 'uploaded'}: ${attachment.id}`);
 	return attachment;
 }
 
@@ -141,15 +132,9 @@ export async function uploadAttachments(
 				getLogger().debug(`Downloading remote image: ${image.src}`);
 				content = await downloadImage(image.src);
 			} else {
-				// Read local file
-				const localPath = path.resolve(attachmentsBase, image.src);
+				// Read local file (throws on path traversal outside attachmentsBase)
+				const localPath = resolveLocalImagePath(image.src, attachmentsBase);
 				getLogger().debug(`Reading local image: ${localPath}`);
-
-				// Security check: ensure path is within attachmentsBase
-				const resolvedBase = path.resolve(attachmentsBase);
-				if (!localPath.startsWith(resolvedBase)) {
-					throw new Error(`Path traversal detected: ${image.src}`);
-				}
 
 				if (!fs.existsSync(localPath)) {
 					getLogger().warning(`Image not found: ${localPath}`);

@@ -42,18 +42,12 @@ function resolveTitle(
 	frontmatter: Record<string, unknown>,
 	markdownContent: string
 ): string {
-	if (inputs.titleOverride) {
-		return inputs.titleOverride;
-	}
-	const fmTitle = getTitleFromFrontmatter(frontmatter);
-	if (fmTitle) {
-		return fmTitle;
-	}
-	const h1Title = extractFirstH1(markdownContent);
-	if (h1Title) {
-		return h1Title;
-	}
-	return path.basename(inputs.source, path.extname(inputs.source));
+	return (
+		inputs.titleOverride ||
+		getTitleFromFrontmatter(frontmatter) ||
+		extractFirstH1(markdownContent) ||
+		path.basename(inputs.source, path.extname(inputs.source))
+	);
 }
 
 async function uploadImagesIfAny(
@@ -95,38 +89,7 @@ export async function runConversion(options: RunOptions): Promise<RunResult> {
 	logger.info(`Content hash: ${contentHash}`);
 
 	if (inputs.dryRun) {
-		logger.info('Dry run mode - skipping API calls.');
-		logger.info('Generated storage format:');
-		logger.info(storage);
-
-		const pageId = pageTarget.mode === 'update' ? pageTarget.pageId : 'NEW';
-		const created = pageTarget.mode === 'create';
-
-		const outputs: ActionOutputs = {
-			pageUrl: `${inputs.confluenceBaseUrl}/wiki/spaces/~/pages/${pageId}`,
-			pageId,
-			version: 0,
-			updated: false,
-			created,
-			attachmentsUploaded: 0,
-			contentHash,
-		};
-
-		logger.info('');
-		logger.info('=== Summary (Dry Run) ===');
-		logger.info(`Mode: ${pageTarget.mode}`);
-		logger.info(`Page ID: ${outputs.pageId}`);
-		logger.info(`Content hash: ${outputs.contentHash}`);
-		logger.info(`Images found: ${images.length}`);
-		if (created) {
-			logger.info(`Would create page in space: ${pageTarget.spaceKey}`);
-		}
-
-		return {
-			outputs,
-			storage,
-			imagesCount: images.length,
-		};
+		return runDryRun(inputs, pageTarget, storage, images.length, contentHash);
 	}
 
 	const client = new ConfluenceClient({
@@ -143,6 +106,44 @@ export async function runConversion(options: RunOptions): Promise<RunResult> {
 	}
 
 	return runUpdateMode(ctx, pageTarget.pageId);
+}
+
+function runDryRun(
+	inputs: ActionInputs,
+	pageTarget: PageTarget,
+	storage: string,
+	imagesCount: number,
+	contentHash: string
+): RunResult {
+	const logger = getLogger();
+	logger.info('Dry run mode - skipping API calls.');
+	logger.info('Generated storage format:');
+	logger.info(storage);
+
+	const pageId = pageTarget.mode === 'update' ? pageTarget.pageId : 'NEW';
+	const created = pageTarget.mode === 'create';
+
+	const outputs: ActionOutputs = {
+		pageUrl: `${inputs.confluenceBaseUrl}/wiki/spaces/~/pages/${pageId}`,
+		pageId,
+		version: 0,
+		updated: false,
+		created,
+		attachmentsUploaded: 0,
+		contentHash,
+	};
+
+	logger.info('');
+	logger.info('=== Summary (Dry Run) ===');
+	logger.info(`Mode: ${pageTarget.mode}`);
+	logger.info(`Page ID: ${outputs.pageId}`);
+	logger.info(`Content hash: ${outputs.contentHash}`);
+	logger.info(`Images found: ${imagesCount}`);
+	if (pageTarget.mode === 'create') {
+		logger.info(`Would create page in space: ${pageTarget.spaceKey}`);
+	}
+
+	return { outputs, storage, imagesCount };
 }
 
 async function runCreateMode(
