@@ -1,5 +1,11 @@
 node_modules
 
+# Serena (local tool state)
+.serena/
+
+# Docs site build output
+docs/dist/
+
 # Build output. The Action bundle (dist/index.js and its runtime companions)
 # is committed so that `uses: 7nohe/confluence-md@vX` resolves a ready-to-run
 # build at the release tag. It is refreshed automatically by the release
