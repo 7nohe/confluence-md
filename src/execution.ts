@@ -41,7 +41,7 @@ export async function runSourceExecution(inputs: ActionInputs): Promise<SourceEx
 	if (stats.isFile()) {
 		return {
 			mode: 'single',
-			result: await runSingleSource(inputs, sourcePath),
+			result: await runFileConversion(inputs, sourcePath, { allowInputTargeting: true }),
 		};
 	}
 
@@ -79,17 +79,30 @@ export function resolveMarkdownFiles(
 	return filtered;
 }
 
-async function runSingleSource(inputs: ActionInputs, sourcePath: string): Promise<RunResult> {
-	const markdown = fs.readFileSync(sourcePath, 'utf-8');
+/**
+ * Convert one Markdown file and update/create its Confluence page.
+ *
+ * `allowInputTargeting` controls whether the page_id/title_override inputs may
+ * target this file (true for single-file mode; false in directory mode, where
+ * each file must be targeted via its own frontmatter).
+ */
+async function runFileConversion(
+	inputs: ActionInputs,
+	filePath: string,
+	options: { allowInputTargeting: boolean; displayPath?: string }
+): Promise<RunResult> {
+	const markdown = fs.readFileSync(filePath, 'utf-8');
 	const { data: frontmatter, content: markdownBody } = extractFrontmatter(markdown);
-	const resolvedInputs = createInputsForFile(inputs, sourcePath, frontmatter, {
-		allowTitleOverrideInput: true,
+	const resolvedInputs = createInputsForFile(inputs, filePath, frontmatter, {
+		allowTitleOverrideInput: options.allowInputTargeting,
 	});
 	const frontmatterPageId = getPageIdFromFrontmatter(
 		frontmatter,
 		resolvedInputs.frontmatterPageIdKey
 	);
-	const pageTarget = resolvePageTarget(resolvedInputs, frontmatterPageId);
+	const pageTarget = resolvePageTarget(resolvedInputs, frontmatterPageId, {
+		allowInputFallback: options.allowInputTargeting,
+	});
 
 	const result = await runConversion({
 		inputs: resolvedInputs,
@@ -98,7 +111,7 @@ async function runSingleSource(inputs: ActionInputs, sourcePath: string): Promis
 		pageTarget,
 	});
 
-	maybeWriteBackPageId(result, resolvedInputs, sourcePath, markdown);
+	maybeWriteBackPageId(result, resolvedInputs, filePath, markdown, options.displayPath);
 	return result;
 }
 
@@ -123,8 +136,19 @@ async function runMultipleSources(
 		logger.info(`Processing ${file.displayPath}...`);
 
 		try {
-			const result = await runSingleSourceForDirectory(inputs, file);
-			results.push(result);
+			const result = await runFileConversion(inputs, file.path, {
+				allowInputTargeting: false,
+				displayPath: file.displayPath,
+			});
+			results.push({
+				source: file.displayPath,
+				pageUrl: result.outputs.pageUrl,
+				pageId: result.outputs.pageId,
+				version: result.outputs.version,
+				updated: result.outputs.updated,
+				attachmentsUploaded: result.outputs.attachmentsUploaded,
+				contentHash: result.outputs.contentHash,
+			});
 		} catch (error) {
 			if (error instanceof PageIdNotFoundError) {
 				skipped.push({
@@ -155,42 +179,6 @@ async function runMultipleSources(
 		results,
 		failures,
 		skipped,
-	};
-}
-
-async function runSingleSourceForDirectory(
-	inputs: ActionInputs,
-	file: ResolvedSourceFile
-): Promise<MultiRunItemResult> {
-	const markdown = fs.readFileSync(file.path, 'utf-8');
-	const { data: frontmatter, content: markdownBody } = extractFrontmatter(markdown);
-	const resolvedInputs = createInputsForFile(inputs, file.path, frontmatter, {
-		allowTitleOverrideInput: false,
-	});
-	const frontmatterPageId = getPageIdFromFrontmatter(
-		frontmatter,
-		resolvedInputs.frontmatterPageIdKey
-	);
-	const pageTarget = resolvePageTarget(resolvedInputs, frontmatterPageId, {
-		allowInputFallback: false,
-	});
-	const result = await runConversion({
-		inputs: resolvedInputs,
-		markdownContent: markdownBody,
-		frontmatter,
-		pageTarget,
-	});
-
-	maybeWriteBackPageId(result, resolvedInputs, file.path, markdown, file.displayPath);
-
-	return {
-		source: file.displayPath,
-		pageUrl: result.outputs.pageUrl,
-		pageId: result.outputs.pageId,
-		version: result.outputs.version,
-		updated: result.outputs.updated,
-		attachmentsUploaded: result.outputs.attachmentsUploaded,
-		contentHash: result.outputs.contentHash,
 	};
 }
 

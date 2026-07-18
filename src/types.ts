@@ -26,14 +26,6 @@ export interface FrontmatterResult {
 	content: string;
 }
 
-export interface AttachmentInfo {
-	filename: string;
-	localPath: string;
-	mimeType: string;
-	isRemote: boolean;
-	originalUrl?: string;
-}
-
 export interface ImageReference {
 	src: string;
 	alt?: string;

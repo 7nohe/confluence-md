@@ -36,32 +36,39 @@ export class ConfluenceClient {
 	 * Make a GET request
 	 */
 	async get<T>(path: string): Promise<T> {
-		const url = `${this.baseUrl}${path}`;
-		getLogger().debug(`GET ${url}`);
-
-		const response = await this.http.get(url);
-		return this.handleResponse<T>(response);
+		return this.requestJson<T>('GET', path);
 	}
 
 	/**
 	 * Make a POST request with JSON body
 	 */
 	async post<T>(path: string, body: unknown): Promise<T> {
-		const url = `${this.baseUrl}${path}`;
-		getLogger().debug(`POST ${url}`);
-
-		const response = await this.http.post(url, JSON.stringify(body));
-		return this.handleResponse<T>(response);
+		return this.requestJson<T>('POST', path, body);
 	}
 
 	/**
 	 * Make a PUT request with JSON body
 	 */
 	async put<T>(path: string, body: unknown): Promise<T> {
-		const url = `${this.baseUrl}${path}`;
-		getLogger().debug(`PUT ${url}`);
+		return this.requestJson<T>('PUT', path, body);
+	}
 
-		const response = await this.http.put(url, JSON.stringify(body));
+	private async requestJson<T>(
+		method: 'GET' | 'POST' | 'PUT',
+		path: string,
+		body?: unknown
+	): Promise<T> {
+		const url = `${this.baseUrl}${path}`;
+		getLogger().debug(`${method} ${url}`);
+
+		let response: HttpClientResponse;
+		if (method === 'GET') {
+			response = await this.http.get(url);
+		} else if (method === 'POST') {
+			response = await this.http.post(url, JSON.stringify(body));
+		} else {
+			response = await this.http.put(url, JSON.stringify(body));
+		}
 		return this.handleResponse<T>(response);
 	}
 

@@ -5,7 +5,7 @@
 import type { Html, Table, TableCell, TableRow } from 'mdast';
 import type { Parent } from 'unist';
 import { createElement } from '../xml';
-import type { MdastNode, NodeHandler } from './types';
+import type { ConversionState, MdastNode, NodeHandler } from './types';
 
 /**
  * Handle table nodes
@@ -56,14 +56,7 @@ export const tableCellHandler: NodeHandler = (node, state) => {
 /**
  * Internal: Convert a table row with header context
  */
-function convertTableRow(
-	node: TableRow,
-	state: {
-		convertChildren: (parent: Parent) => string;
-		convertNode: (node: MdastNode) => string;
-	},
-	isHeader: boolean
-): string {
+function convertTableRow(node: TableRow, state: ConversionState, isHeader: boolean): string {
 	const cells = (node.children || [])
 		.map((cell) => convertTableCell(cell as TableCell, state, isHeader))
 		.join('');
@@ -73,22 +66,12 @@ function convertTableRow(
 /**
  * Internal: Convert a table cell with header context
  */
-function convertTableCell(
-	node: TableCell,
-	state: {
-		convertChildren: (parent: Parent) => string;
-		convertNode: (node: MdastNode) => string;
-	},
-	isHeader: boolean
-): string {
+function convertTableCell(node: TableCell, state: ConversionState, isHeader: boolean): string {
 	const tag = isHeader ? 'th' : 'td';
 	return createElement(tag, undefined, convertTableCellChildren(node, state));
 }
 
-function convertTableCellChildren(
-	node: TableCell,
-	state: { convertChildren: (parent: Parent) => string; convertNode: (node: MdastNode) => string }
-): string {
+function convertTableCellChildren(node: TableCell, state: ConversionState): string {
 	if (!node.children || node.children.length === 0) {
 		return state.convertChildren(node as unknown as Parent);
 	}
