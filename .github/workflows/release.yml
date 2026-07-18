@@ -44,7 +44,7 @@ jobs:
     needs: release-please
     if: ${{ github.event_name == 'push' && needs.release-please.outputs.pr != '' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ fromJSON(needs.release-please.outputs.pr).headBranchName }}
           fetch-depth: 0
@@ -80,7 +80,7 @@ jobs:
     needs: release-please
     if: ${{ github.event_name == 'push' && needs.release-please.outputs.release_created == 'true' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -105,7 +105,7 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: actions/setup-node@v4
         with:
@@ -129,7 +129,7 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: actions/setup-node@v4
         with:
